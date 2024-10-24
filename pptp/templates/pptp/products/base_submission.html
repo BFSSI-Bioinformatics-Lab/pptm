@@ -1,0 +1,27 @@
+# templates/pptp/products/base_submission.html
+{% extends "pptp/base.html" %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <!-- Progress bar -->
+    <div class="mb-8">
+        <div class="flex justify-between mb-2">
+            {% for step in submission_steps %}
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center 
+                    {% if step.completed %}bg-green-500{% elif step.active %}bg-blue-500{% else %}bg-gray-300{% endif %} text-white">
+                    {{ forloop.counter }}
+                </div>
+                <span class="text-xs mt-1">{{ step.name }}</span>
+            </div>
+            {% if not forloop.last %}
+                <div class="flex-1 h-1 mt-4 mx-2 
+                    {% if step.completed %}bg-green-500{% else %}bg-gray-300{% endif %}"></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {% block submission_content %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+# templates/pptp/products/product_images_upload.html
+{% extends "pptp/products/base_submission.html" %}
+
+{% block submission_content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Upload Product Images</h1>
+    <p class="mb-4">Take a clear photo of all sides of the product.</p>
+
+    <div class="mb-6">
+        <h2 class="font-semibold mb-2">Uploaded Product Images</h2>
+        <div class="space-y-2">
+            {% for image in product.product_images.all %}
+            <div class="border rounded p-2">
+                <img src="{{ image.image.url }}" alt="Product Image" class="w-full mb-2">
+                {% if image.notes %}
+                <p class="text-sm text-gray-600">Notes: {{ image.notes }}</p>
+                {% endif %}
+                <button 
+                    data-table-id="{{ image.id }}"
+                    class="delete-table text-red-500 hover:text-red-700 mt-2">
+                    Delete
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <div class="flex gap-4">
+            <button type="submit" name="add_more" class="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600">
+                Add Another Image
+            </button>
+            <button type="submit" name="continue" class="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600">
+                Continue
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
