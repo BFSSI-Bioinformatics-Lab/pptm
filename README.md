@@ -2,12 +2,12 @@
 
 ## TODO
 
-- before you begin screen with checkboxes to deal with variety pack, multiple NFT, multiple barcode, etc options
-- need to type in product name (with examples of good and bad)
-- big red button to turn on/off Image upload
-- bulk image upload page
-- front page
-- review page for backend nightly processing
+    - before you begin screen with checkboxes to deal with variety pack, multiple NFT, multiple barcode, etc options
+    - need to type in product name (with examples of good and bad)
+    - big red button to turn on/off Image upload for when wifi not available. in this case only save the filenames, not the image. can we cache the images so that they're still on the review page?
+    - bulk image upload page for when wifi is available. will need to map filenames to DB entries
+    - front page
+    - review page for backend nightly processing
 
 Behold My Awesome Project!
 

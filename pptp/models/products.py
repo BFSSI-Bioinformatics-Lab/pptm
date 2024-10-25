@@ -9,18 +9,36 @@ class Product(models.Model):
     """
     Main product model to store product information and metadata
     """
+    # Existing fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        User,
+        'users.User',
         on_delete=models.SET_NULL,
         null=True,
         related_name='submitted_products'
     )
     submission_complete = models.BooleanField(default=False)
     
+    product_name = models.CharField(
+        max_length=255,
+        help_text=_("Full product name as shown on packaging")
+    )
+    is_variety_pack = models.BooleanField(
+        default=False,
+        help_text=_("Check if this is a variety/multi-pack product")
+    )
+    has_multiple_nutrition_facts = models.BooleanField(
+        default=False,
+        help_text=_("Check if product has multiple nutrition facts tables")
+    )
+    has_multiple_barcodes = models.BooleanField(
+        default=False,
+        help_text=_("Check if product has multiple barcodes")
+    )
+    
     def __str__(self):
-        return f"Product {self.id} - Submitted by {self.created_by}"
+        return f"{self.product_name} (Product {self.id})"
 
 
 class Barcode(models.Model):

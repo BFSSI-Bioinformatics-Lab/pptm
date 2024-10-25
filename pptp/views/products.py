@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import (
+    ProductSetupForm,
     BarcodeForm,
     NutritionFactsForm,
     IngredientsForm,
@@ -12,15 +13,25 @@ from ..forms.products import (
 )
 
 
-class ProductSubmissionStart(LoginRequiredMixin, CreateView):
+class ProductSubmissionStartView(LoginRequiredMixin, CreateView):
     model = Product
+    fields = []
     template_name = 'pptp/products/submission_start.html'
-    fields = []  # No fields needed as we're just creating an empty product
-
+    
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        return response
+    
+    def get_success_url(self):
+        return reverse_lazy('products:setup', kwargs={'pk': self.object.pk})
 
+
+class ProductSetupView(LoginRequiredMixin, UpdateView):  # Changed from CreateView to UpdateView
+    model = Product
+    form_class = ProductSetupForm
+    template_name = 'pptp/products/setup.html'
+    
     def get_success_url(self):
         return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
 
