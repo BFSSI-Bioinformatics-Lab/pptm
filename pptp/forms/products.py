@@ -1,6 +1,7 @@
+# forms/products.py
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
+from ..models import Product
 
 
 class ProductSetupForm(forms.ModelForm):
@@ -20,24 +21,3 @@ class ProductSetupForm(forms.ModelForm):
                 _("Please enter the full product name. For example: 'Honey Nut Cheerios' instead of just 'Cheerios'")
             )
         return name
-    
-
-class BarcodeForm(forms.ModelForm):
-    class Meta:
-        model = Barcode
-        fields = ['barcode_image']
-
-class NutritionFactsForm(forms.ModelForm):
-    class Meta:
-        model = NutritionFacts
-        fields = ['image', 'notes']
-
-class IngredientsForm(forms.ModelForm):
-    class Meta:
-        model = Ingredients
-        fields = ['image', 'notes']
-
-class ProductImageForm(forms.ModelForm):
-    class Meta:
-        model = ProductImage
-        fields = ['image', 'image_type', 'notes']
