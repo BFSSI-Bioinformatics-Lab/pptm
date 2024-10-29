@@ -1,9 +1,13 @@
 # views/products.py
-from django.views.generic import CreateView, UpdateView, DetailView
+import os
+import uuid
+from django.views.generic import View, CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.db import transaction
+from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
@@ -39,6 +43,180 @@ class BaseProductStepView(LoginRequiredMixin):
         """Override in child classes to specify the previous step URL"""
         raise NotImplementedError
 
+    def handle_offline_file(self, file):
+        """
+        In offline mode, save the file information without uploading
+        Returns a tuple of (filename, None) for offline mode
+        or (None, uploaded_file) for online mode
+        """
+        is_offline = self.request.session.get('offline_mode', False)
+        
+        if is_offline:
+            if not file:
+                return None, None
+                
+            # Generate a unique filename
+            ext = os.path.splitext(file.name)[1].lower()
+            filename = f"{uuid.uuid4()}{ext}"
+            return filename, None
+        
+        return None, file
+
+
+class BaseImageUploadView(LoginRequiredMixin, CreateView):
+    """Base class for image upload views"""
+    template_name = 'pptp/products/image_upload_base.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
+        context['pending_upload_count'] = self.get_pending_upload_count()
+        return context
+    
+    def get_pending_upload_count(self):
+        """Get total number of pending uploads for the user"""
+        user = self.request.user
+        return sum([
+            Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            Ingredients.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
+        ])
+    
+    def form_valid(self, form):
+        is_queue_mode = self.request.session.get('photo_queue_mode', False)
+        form.instance.product = self.product
+        
+        if is_queue_mode:
+            # In photo queue mode, just store the filename
+            if file := self.request.FILES.get(self.file_field_name):
+                form.instance.device_filename = file.name
+                form.instance.is_uploaded = False
+                # Don't save the actual file
+                setattr(form.instance, self.file_field_name, None)
+        else:
+            # Normal mode - save the file
+            form.instance.is_uploaded = True
+            
+        return super().form_valid(form)
+
+
+class TogglePhotoQueueMode(LoginRequiredMixin, View):
+    """Toggle Photo Queue Mode"""
+    
+    def post(self, request):
+        current_mode = request.session.get('photo_queue_mode', False)
+        request.session['photo_queue_mode'] = not current_mode
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+class BulkUploadView(LoginRequiredMixin, View):
+    """Handle bulk image upload"""
+    
+    def post(self, request):
+        try:
+            files = request.FILES.getlist('files')
+            results = self.process_files(files)
+            return JsonResponse(results)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+    @transaction.atomic
+    def process_files(self, files):
+        results = {
+            'processed': [],
+            'errors': [],
+            'summary': {
+                'total': len(files),
+                'success': 0,
+                'failed': 0,
+                'products_updated': set()
+            }
+        }
+        
+        # Create lookup of filenames
+        filename_map = {f.name: f for f in files}
+        
+        # Find all pending records that match any of these filenames
+        pending_records = []
+        models_to_check = [Barcode, NutritionFacts, Ingredients, ProductImage]
+        
+        for model in models_to_check:
+            records = model.objects.filter(
+                product__created_by=self.request.user,
+                product__is_offline=True,
+                is_uploaded=False,
+                device_filename__in=filename_map.keys()
+            ).select_related('product')
+            pending_records.extend(records)
+        
+        # Process each pending record
+        for record in pending_records:
+            try:
+                # Get the matching file
+                file = filename_map.get(record.device_filename)
+                if not file:
+                    continue
+                
+                # Update the record with the actual file
+                field_name = self.get_image_field_name(record)
+                setattr(record, field_name, file)
+                record.is_uploaded = True
+                record.save()
+                
+                results['processed'].append({
+                    'filename': record.device_filename,
+                    'product': record.product.product_name,
+                    'type': record.__class__.__name__
+                })
+                results['summary']['success'] += 1
+                results['summary']['products_updated'].add(record.product.id)
+                
+                # Check if product is complete
+                self.check_product_completion(record.product)
+                
+            except Exception as e:
+                results['errors'].append({
+                    'filename': record.device_filename,
+                    'error': str(e)
+                })
+                results['summary']['failed'] += 1
+        
+        # Note files that didn't match any records
+        matched_filenames = {r.device_filename for r in pending_records}
+        unmatched_files = set(filename_map.keys()) - matched_filenames
+        
+        for filename in unmatched_files:
+            results['errors'].append({
+                'filename': filename,
+                'error': 'No matching pending upload found for this file'
+            })
+            results['summary']['failed'] += 1
+        
+        results['summary']['products_updated'] = list(results['summary']['products_updated'])
+        return results
+
+    def get_image_field_name(self, record):
+        """Get the correct image field name based on record type"""
+        if isinstance(record, Barcode):
+            return 'barcode_image'
+        return 'image'
+
+    def check_product_completion(self, product):
+        """Check if all files for a product have been uploaded"""
+        all_uploaded = not any([
+            product.barcodes.filter(is_uploaded=False).exists(),
+            product.nutrition_facts.filter(is_uploaded=False).exists(),
+            product.ingredients.filter(is_uploaded=False).exists(),
+            product.product_images.filter(is_uploaded=False).exists()
+        ])
+        
+        if all_uploaded:
+            product.is_offline = False
+            product.save()
 
 class ProductSubmissionStartView(CreateView):
     model = Product
@@ -53,7 +231,7 @@ class ProductSubmissionStartView(CreateView):
         return reverse_lazy('products:setup', kwargs={'pk': self.object.pk})
 
 
-class ProductSetupView(BaseProductStepView, UpdateView):
+class ProductSetupView(BaseImageUploadView):
     view_step = 0
     model = Product
     form_class = ProductSetupForm
@@ -63,7 +241,7 @@ class ProductSetupView(BaseProductStepView, UpdateView):
         return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
 
 
-class BarcodeUploadView(BaseProductStepView, CreateView):
+class BarcodeUploadView(BaseImageUploadView):
     view_step = 1
     model = Barcode
     fields = ['barcode_image', 'barcode_number']
@@ -100,7 +278,7 @@ class BarcodeUploadView(BaseProductStepView, CreateView):
         return reverse_lazy('products:nutrition_facts_upload', kwargs={'pk': self.product.pk})
 
 
-class NutritionFactsUploadView(BaseProductStepView, CreateView):
+class NutritionFactsUploadView(BaseImageUploadView):
     view_step = 2
     model = NutritionFacts
     fields = ['image', 'notes']
@@ -137,7 +315,7 @@ class NutritionFactsUploadView(BaseProductStepView, CreateView):
         return reverse_lazy('products:ingredients_upload', kwargs={'pk': self.product.pk})
 
 
-class IngredientsUploadView(BaseProductStepView, CreateView):
+class IngredientsUploadView(BaseImageUploadView):
     view_step = 3
     model = Ingredients
     fields = ['image', 'notes']
@@ -163,7 +341,7 @@ class IngredientsUploadView(BaseProductStepView, CreateView):
         return reverse_lazy('products:product_images_upload', kwargs={'pk': self.product.pk})
 
 
-class ProductImagesUploadView(BaseProductStepView, CreateView):
+class ProductImagesUploadView(BaseImageUploadView):
     view_step = 4
     model = ProductImage
     fields = ['image', 'image_type', 'notes']
