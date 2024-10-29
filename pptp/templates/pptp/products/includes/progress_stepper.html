@@ -88,38 +88,38 @@
     
     <div class="stepper-container">
       <div class="stepper">
-        {% with ''|center:6 as steps %}
-        {% for _ in steps %}
-          {% with forloop.counter0 as step_num %}
-          <div class="step {% if current_step > step_num %}completed{% elif current_step == step_num %}active{% endif %}">
-            <div class="step-circle">
-              {% if current_step > step_num %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              {% else %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-              </svg>
-              {% endif %}
-            </div>
-            <span class="step-label">
-              {% if step_num == 0 %}
-                Setup
-              {% elif step_num == 1 %}
-                Barcode
-              {% elif step_num == 2 %}
-                Nutrition
-              {% elif step_num == 3 %}
-                Ingredients
-              {% elif step_num == 4 %}
-                Images
-              {% else %}
-                Review
-              {% endif %}
-            </span>
+        {% with steps=view_step|default:0|add:"0" %}
+        {% for step in "012345" %}
+        {% with step_num=step|add:"0" %}
+        <div class="step {% if steps > step_num %}completed{% elif steps == step_num %}active{% endif %}">
+          <div class="step-circle">
+            {% if steps > step_num %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            {% else %}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+            </svg>
+            {% endif %}
           </div>
-          {% endwith %}
+          <span class="step-label">
+            {% if step_num == 0 %}
+              Setup
+            {% elif step_num == 1 %}
+              Barcode
+            {% elif step_num == 2 %}
+              Nutrition
+            {% elif step_num == 3 %}
+              Ingredients
+            {% elif step_num == 4 %}
+              Images
+            {% else %}
+              Review
+            {% endif %}
+          </span>
+        </div>
+        {% endwith %}
         {% endfor %}
         {% endwith %}
       </div>
