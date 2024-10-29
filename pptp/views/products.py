@@ -31,11 +31,6 @@ class BaseProductStepView(LoginRequiredMixin):
     def get_product(self):
         return Product.objects.get(pk=self.kwargs['pk'])
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['product'] = self.product
-        return context
-    
     def is_previous_step_complete(self):
         """Override in child classes to implement specific validation"""
         return True
@@ -45,7 +40,7 @@ class BaseProductStepView(LoginRequiredMixin):
         raise NotImplementedError
 
 
-class ProductSubmissionStartView(LoginRequiredMixin, CreateView):
+class ProductSubmissionStartView(CreateView):
     model = Product
     fields = []
     template_name = 'pptp/products/submission_start.html'
