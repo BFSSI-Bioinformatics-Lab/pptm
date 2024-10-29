@@ -2,8 +2,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container mx-auto px-4">
     {% include "pptp/products/includes/progress_stepper.html" with current_step=view_step %}
-    {% block step_content %}{% endblock %}
+    
+    {# Main submission content area #}
+    <div class="submission-container mt-6">
+        {% block submission_content %}
+        {% endblock submission_content %}
+    </div>
 </div>
-{% endblock %}
+{% endblock content %}
