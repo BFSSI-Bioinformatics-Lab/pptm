@@ -1,0 +1,83 @@
+{# pptp/templates/pptp/products/dashboard.html #}
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-8 text-center">{% trans "Product Photo Collection" %}</h1>
+
+    {% if messages %}
+    <div class="mb-8">
+        {% for message in messages %}
+        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Photo Queue Mode Status #}
+    <div class="bg-white shadow rounded-lg mb-8 p-6">
+        <h2 class="text-xl font-semibold mb-4">{% trans "Upload Mode" %}</h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 mb-2">
+                    {% if photo_queue_mode %}
+                        {% trans "Photo Queue Mode is ON" %}
+                        {% if pending_upload_count %}
+                            <br>
+                            {% blocktrans with count=pending_upload_count %}
+                            {{ count }} photos pending upload
+                            {% endblocktrans %}
+                        {% endif %}
+                    {% else %}
+                        {% trans "Photo Queue Mode is OFF" %}
+                    {% endif %}
+                </p>
+                <p class="text-sm text-gray-500">
+                    {% trans "Photo Queue Mode saves photos locally for later upload when you have better connectivity." %}
+                </p>
+            </div>
+            <form method="post" action="{% url 'products:toggle_photo_queue' %}">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    {% if photo_queue_mode %}
+                        {% trans "Switch to Online Mode" %}
+                    {% else %}
+                        {% trans "Switch to Photo Queue Mode" %}
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# New Submission Card #}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">{% trans "Submit New Product" %}</h2>
+        <p class="text-gray-600 mb-6">
+            {% trans "Submit a new product by taking photos of its packaging, including barcodes, nutrition facts, and ingredients list." %}
+        </p>
+        <a href="{% url 'products:submission_start' %}" 
+           class="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded text-center">
+            {% trans "Begin New Submission" %}
+        </a>
+    </div>
+
+    {% if pending_upload_count %}
+    {# Bulk Upload Section - Only show if there are pending uploads #}
+    <div class="bg-white shadow rounded-lg mt-8 p-6">
+        <h2 class="text-xl font-semibold mb-4">{% trans "Pending Uploads" %}</h2>
+        <p class="text-gray-600 mb-6">
+            {% blocktrans with count=pending_upload_count %}
+            You have {{ count }} photos waiting to be uploaded. Upload them now if you have a good connection.
+            {% endblocktrans %}
+        </p>
+        <a href="{% url 'products:bulk_upload' %}" 
+           class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded text-center">
+            {% trans "Upload Pending Photos" %}
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

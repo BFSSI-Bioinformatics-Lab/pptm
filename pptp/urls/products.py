@@ -1,5 +1,7 @@
 from django.urls import path
 from ..views.products import (
+    ProductDashboardView,
+    TogglePhotoQueueMode,
     ProductSetupView,
     ProductSubmissionStartView,
     BarcodeUploadView,
@@ -12,6 +14,8 @@ from ..views.products import (
 app_name = 'products'
 
 urlpatterns = [
+    path('', ProductDashboardView.as_view(), name='dashboard'),
+    path('toggle-photo-queue/', TogglePhotoQueueMode.as_view(), name='toggle_photo_queue'),  # Add this line
     path('submit/', ProductSubmissionStartView.as_view(), name='submission_start'),
     path('submit/<int:pk>/setup/', ProductSetupView.as_view(), name='setup'),
     path('submit/<int:pk>/barcode/', BarcodeUploadView.as_view(), name='barcode_upload'),

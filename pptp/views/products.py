@@ -1,7 +1,7 @@
 # views/products.py
 import os
 import uuid
-from django.views.generic import View, CreateView, UpdateView
+from django.views.generic import View, CreateView, UpdateView, TemplateView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
@@ -11,6 +11,26 @@ from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
+
+
+class ProductDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'pptp/products/dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
+        context['pending_upload_count'] = self.get_pending_upload_count()
+        return context
+    
+    def get_pending_upload_count(self):
+        """Get total number of pending uploads for the user"""
+        user = self.request.user
+        return sum([
+            Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            Ingredients.objects.filter(product__created_by=user, is_uploaded=False).count(),
+            ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
+        ])
 
 
 class BaseProductStepView(LoginRequiredMixin):
@@ -102,12 +122,14 @@ class BaseImageUploadView(LoginRequiredMixin, CreateView):
 
 
 class TogglePhotoQueueMode(LoginRequiredMixin, View):
-    """Toggle Photo Queue Mode"""
-    
     def post(self, request):
         current_mode = request.session.get('photo_queue_mode', False)
         request.session['photo_queue_mode'] = not current_mode
-        return redirect(request.META.get('HTTP_REFERER', '/'))
+        return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
+
+    def get(self, request):
+        # Handle GET requests by redirecting to avoid CSRF issues with browser refresh
+        return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
 class BulkUploadView(LoginRequiredMixin, View):
