@@ -40,7 +40,7 @@
         <div class="grid grid-cols-2 gap-4">
             {% for barcode in product.barcodes.all %}
             <div class="border rounded p-2">
-                <img src="{{ barcode.barcode_image.url }}" 
+                <img src="{{ barcode.image.url }}" 
                      alt="Barcode" 
                      class="w-full h-40 object-cover">
             </div>

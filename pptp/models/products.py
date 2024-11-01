@@ -60,19 +60,20 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.product_name} (Product {self.id})"
 
-
 class BaseImageModel(models.Model):
     """
     Abstract base class for all image-related models
     """
     created_at = models.DateTimeField(auto_now_add=True)
-    product = models.ForeignKey(
-        'Product',
-        on_delete=models.CASCADE,
-    )
     notes = models.TextField(
         blank=True,
         help_text=_("Any additional notes")
+    )
+    image = models.ImageField(
+        upload_to='images/',  # Will be overridden in child classes
+        help_text=_("Image file"),
+        null=True,
+        blank=True
     )
     
     # Offline mode fields
@@ -93,23 +94,22 @@ class BaseImageModel(models.Model):
 
 class Barcode(BaseImageModel):
     """Store barcode images"""
-    barcode_image = models.ImageField(
-        upload_to='barcodes/',
-        help_text=_("Image of the product barcode"),
-        null=True,
-        blank=True
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='barcodes'
     )
     barcode_number = models.CharField(
         max_length=50,
         blank=True,
         help_text=_("Barcode number if automatically detected")
     )
-
+    
     class Meta:
         constraints = [
             models.CheckConstraint(
                 check=(
-                    models.Q(barcode_image__isnull=False, is_uploaded=True) |
+                    models.Q(image__isnull=False, is_uploaded=True) |
                     models.Q(device_filename__isnull=False, is_uploaded=False)
                 ),
                 name='barcode_image_or_device_filename_required'
@@ -118,16 +118,13 @@ class Barcode(BaseImageModel):
 
 
 class NutritionFacts(BaseImageModel):
-    """
-    Store nutrition facts table images and related data
-    """
-    image = models.ImageField(
-        upload_to='nutrition_facts/',
-        help_text=_("Image of the nutrition facts table"),
-        null=True,
-        blank=True
+    """Store nutrition facts table images"""
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='nutrition_facts'
     )
-
+    
     class Meta:
         verbose_name_plural = "Nutrition Facts"
         constraints = [
@@ -140,21 +137,15 @@ class NutritionFacts(BaseImageModel):
             )
         ]
 
-    def __str__(self):
-        return f"Nutrition Facts for Product {self.product.id}"
-
 
 class Ingredients(BaseImageModel):
-    """
-    Store ingredients list images
-    """
-    image = models.ImageField(
-        upload_to='ingredients/',
-        help_text=_("Image of the ingredients list"),
-        null=True,
-        blank=True
+    """Store ingredients list images"""
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='ingredients'
     )
-
+    
     class Meta:
         verbose_name_plural = "Ingredients"
         constraints = [
@@ -167,19 +158,13 @@ class Ingredients(BaseImageModel):
             )
         ]
 
-    def __str__(self):
-        return f"Ingredients for Product {self.product.id}"
-
 
 class ProductImage(BaseImageModel):
-    """
-    Store additional product images (front, sides, etc.)
-    """
-    image = models.ImageField(
-        upload_to='product_images/',
-        help_text=_("Product image"),
-        null=True,
-        blank=True
+    """Store additional product images (front, sides, etc.)"""
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='product_images'
     )
     image_type = models.CharField(
         max_length=50,
@@ -202,6 +187,3 @@ class ProductImage(BaseImageModel):
                 name='product_image_or_device_filename_required'
             )
         ]
-
-    def __str__(self):
-        return f"{self.get_image_type_display()} image for Product {self.product.id}"

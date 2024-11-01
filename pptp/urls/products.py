@@ -8,14 +8,16 @@ from ..views.products import (
     IngredientsUploadView,
     NutritionFactsUploadView,
     ProductImagesUploadView,
-    ProductReviewView
+    ProductReviewView,
+    BulkUploadView
 )
 
 app_name = 'products'
 
 urlpatterns = [
     path('', ProductDashboardView.as_view(), name='dashboard'),
-    path('toggle-photo-queue/', TogglePhotoQueueMode.as_view(), name='toggle_photo_queue'),  # Add this line
+    path('toggle-photo-queue/', TogglePhotoQueueMode.as_view(), name='toggle_photo_queue'),
+    path('bulk-upload/', BulkUploadView.as_view(), name='bulk_upload'),
     path('submit/', ProductSubmissionStartView.as_view(), name='submission_start'),
     path('submit/<int:pk>/setup/', ProductSetupView.as_view(), name='setup'),
     path('submit/<int:pk>/barcode/', BarcodeUploadView.as_view(), name='barcode_upload'),

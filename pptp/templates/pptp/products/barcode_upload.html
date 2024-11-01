@@ -31,7 +31,7 @@
         <div class="grid grid-cols-2 gap-4">
             {% for barcode in barcodes %}
             <div class="border rounded p-2">
-                <img src="{{ barcode.barcode_image.url }}" alt="Barcode" class="w-full">
+                <img src="{{ barcode.image.url }}" alt="Barcode" class="w-full">
                 {% if barcode.barcode_number %}
                 <p class="text-sm text-gray-600 mt-1">{{ barcode.barcode_number }}</p>
                 {% endif %}

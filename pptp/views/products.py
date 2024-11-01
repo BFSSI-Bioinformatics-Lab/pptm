@@ -13,14 +13,8 @@ from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
 
 
-class ProductDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'pptp/products/dashboard.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
-        context['pending_upload_count'] = self.get_pending_upload_count()
-        return context
+class BaseProductView(LoginRequiredMixin):
+    """New base class for all product-related views"""
     
     def get_pending_upload_count(self):
         """Get total number of pending uploads for the user"""
@@ -31,9 +25,19 @@ class ProductDashboardView(LoginRequiredMixin, TemplateView):
             Ingredients.objects.filter(product__created_by=user, is_uploaded=False).count(),
             ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
         ])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
+        context['pending_upload_count'] = self.get_pending_upload_count()
+        return context
 
 
-class BaseProductStepView(LoginRequiredMixin):
+class ProductDashboardView(BaseProductView, TemplateView):
+    template_name = 'pptp/products/dashboard.html'
+
+
+class BaseProductStepView(BaseProductView):
     """Base class for all product submission steps"""
     view_step = None  # Will be set by child classes
 
@@ -63,45 +67,11 @@ class BaseProductStepView(LoginRequiredMixin):
         """Override in child classes to specify the previous step URL"""
         raise NotImplementedError
 
-    def handle_offline_file(self, file):
-        """
-        In offline mode, save the file information without uploading
-        Returns a tuple of (filename, None) for offline mode
-        or (None, uploaded_file) for online mode
-        """
-        is_offline = self.request.session.get('offline_mode', False)
-        
-        if is_offline:
-            if not file:
-                return None, None
-                
-            # Generate a unique filename
-            ext = os.path.splitext(file.name)[1].lower()
-            filename = f"{uuid.uuid4()}{ext}"
-            return filename, None
-        
-        return None, file
 
-
-class BaseImageUploadView(LoginRequiredMixin, CreateView):
+class BaseImageUploadView(BaseProductStepView, CreateView):
     """Base class for image upload views"""
     template_name = 'pptp/products/image_upload_base.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
-        context['pending_upload_count'] = self.get_pending_upload_count()
-        return context
-    
-    def get_pending_upload_count(self):
-        """Get total number of pending uploads for the user"""
-        user = self.request.user
-        return sum([
-            Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            Ingredients.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
-        ])
+    file_field_name = None  # Must be set by child classes
     
     def form_valid(self, form):
         is_queue_mode = self.request.session.get('photo_queue_mode', False)
@@ -121,19 +91,32 @@ class BaseImageUploadView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class TogglePhotoQueueMode(LoginRequiredMixin, View):
+class ProductSetupView(BaseProductStepView, UpdateView):
+    model = Product
+    form_class = ProductSetupForm
+    template_name = 'pptp/products/setup.html'
+    view_step = 0
+    
+    def get_success_url(self):
+        return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
+
+
+class TogglePhotoQueueMode(BaseProductView, View):
     def post(self, request):
         current_mode = request.session.get('photo_queue_mode', False)
         request.session['photo_queue_mode'] = not current_mode
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
     def get(self, request):
-        # Handle GET requests by redirecting to avoid CSRF issues with browser refresh
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
-class BulkUploadView(LoginRequiredMixin, View):
+class BulkUploadView(BaseProductView, View):
     """Handle bulk image upload"""
+    
+    def get_context_data(self, **kwargs):
+        # Override to prevent errors since View doesn't support get_context_data
+        return {}
     
     def post(self, request):
         try:
@@ -145,7 +128,7 @@ class BulkUploadView(LoginRequiredMixin, View):
                 'status': 'error',
                 'message': str(e)
             }, status=500)
-
+    
     @transaction.atomic
     def process_files(self, files):
         results = {
@@ -240,7 +223,8 @@ class BulkUploadView(LoginRequiredMixin, View):
             product.is_offline = False
             product.save()
 
-class ProductSubmissionStartView(CreateView):
+
+class ProductSubmissionStartView(BaseProductView, CreateView):
     model = Product
     fields = []
     template_name = 'pptp/products/submission_start.html'
@@ -253,22 +237,13 @@ class ProductSubmissionStartView(CreateView):
         return reverse_lazy('products:setup', kwargs={'pk': self.object.pk})
 
 
-class ProductSetupView(BaseImageUploadView):
-    view_step = 0
-    model = Product
-    form_class = ProductSetupForm
-    template_name = 'pptp/products/setup.html'
-    
-    def get_success_url(self):
-        return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
-
-
 class BarcodeUploadView(BaseImageUploadView):
     view_step = 1
     model = Barcode
-    fields = ['barcode_image', 'barcode_number']
+    fields = ['image', 'barcode_number']
     template_name = 'pptp/products/barcode_upload.html'
-    
+    file_field_name = 'image'
+
     def is_previous_step_complete(self):
         return bool(self.product.product_name)
     
@@ -305,7 +280,8 @@ class NutritionFactsUploadView(BaseImageUploadView):
     model = NutritionFacts
     fields = ['image', 'notes']
     template_name = 'pptp/products/nutrition_facts_upload.html'
-    
+    file_field_name = 'image'
+
     def is_previous_step_complete(self):
         return self.product.barcodes.exists()
     
@@ -342,7 +318,8 @@ class IngredientsUploadView(BaseImageUploadView):
     model = Ingredients
     fields = ['image', 'notes']
     template_name = 'pptp/products/ingredients_upload.html'
-    
+    file_field_name = 'image'
+
     def is_previous_step_complete(self):
         return self.product.nutrition_facts.exists()
     
@@ -368,7 +345,8 @@ class ProductImagesUploadView(BaseImageUploadView):
     model = ProductImage
     fields = ['image', 'image_type', 'notes']
     template_name = 'pptp/products/product_images_upload.html'
-    
+    file_field_name = 'image'
+
     def is_previous_step_complete(self):
         return self.product.ingredients.exists()
     
@@ -398,21 +376,25 @@ class ProductImagesUploadView(BaseImageUploadView):
         return reverse_lazy('products:review', kwargs={'pk': self.product.pk})
     
     
-class ProductReviewView(BaseProductStepView, UpdateView):
+class ProductReviewView(BaseProductView, UpdateView):
     view_step = 5
     model = Product
     template_name = 'pptp/products/review.html'
     fields = []  # No fields to update directly
     
-    def is_previous_step_complete(self):
-        # Require at least one ingredient image
-        return self.product.ingredients.exists()
-    
-    def get_previous_step_url(self):
-        return reverse_lazy('products:product_images_upload', kwargs={'pk': self.product.pk})
+    def dispatch(self, request, *args, **kwargs):
+        self.product = Product.objects.get(pk=self.kwargs['pk'])
+        
+        if not self.product.ingredients.exists():
+            messages.error(request, _("Please complete the previous step first."))
+            return redirect('products:product_images_upload', pk=self.product.pk)
+            
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['product'] = self.product
+        context['view_step'] = self.view_step
         context['validation_errors'] = self.get_validation_errors()
         
         # Group product images by type for display
