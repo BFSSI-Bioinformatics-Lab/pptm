@@ -129,24 +129,26 @@ class TogglePhotoQueueMode(BaseProductView, View):
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
-class BulkUploadView(BaseProductView, View):
+class BulkUploadView(LoginRequiredMixin, TemplateView):
     """Handle bulk image upload"""
-    
+    template_name = 'pptp/products/bulk_upload.html'
+
     def get_context_data(self, **kwargs):
-        # Override to prevent errors since View doesn't support get_context_data
-        return {}
-    
+        context = super().get_context_data(**kwargs)
+        if 'results' in self.request.session:
+            context['results'] = self.request.session.pop('results')
+        return context
+
     def post(self, request):
         try:
             files = request.FILES.getlist('files')
             results = self.process_files(files)
-            return JsonResponse(results)
+            messages.success(request, _("Files processed successfully"))
+            request.session['results'] = results
         except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': str(e)
-            }, status=500)
-    
+            messages.error(request, str(e))
+        return redirect('products:bulk_upload')
+        
     @transaction.atomic
     def process_files(self, files):
         results = {
@@ -220,7 +222,7 @@ class BulkUploadView(BaseProductView, View):
             results['summary']['failed'] += 1
         
         results['summary']['products_updated'] = list(results['summary']['products_updated'])
-        return results
+        return results  
 
     def get_image_field_name(self, record):
         """Get the correct image field name based on record type"""
