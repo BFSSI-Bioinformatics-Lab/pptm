@@ -1,4 +1,5 @@
 {% extends "pptp/products/base_submission.html" %}
+{% load i18n %}
 
 {% block submission_content %}
 <div class="bg-white rounded-lg shadow p-6">
@@ -11,6 +12,13 @@
             {{ message }}
         </div>
         {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if photo_queue_mode %}
+    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
+        <p class="font-bold">{% trans "Photo Queue Mode Active" %}</p>
+        <p>{% trans "Some images are pending upload. They will be fully processed when you're back online." %}</p>
     </div>
     {% endif %}
 
@@ -40,9 +48,21 @@
         <div class="grid grid-cols-2 gap-4">
             {% for barcode in product.barcodes.all %}
             <div class="border rounded p-2">
-                <img src="{{ barcode.image.url }}" 
-                     alt="Barcode" 
-                     class="w-full h-40 object-cover">
+                {% if not barcode.is_uploaded %}
+                    <div class="bg-gray-100 p-4 text-center h-40 flex items-center justify-center">
+                        <div>
+                            <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
+                            <p class="text-sm text-gray-500 break-all">{{ barcode.device_filename }}</p>
+                        </div>
+                    </div>
+                {% elif barcode.is_uploaded and barcode.image %}
+                    <img src="{{ barcode.image.url }}" 
+                         alt="Barcode" 
+                         class="w-full h-40 object-cover">
+                {% endif %}
+                {% if barcode.barcode_number %}
+                    <p class="mt-2 text-sm font-mono">{{ barcode.barcode_number }}</p>
+                {% endif %}
             </div>
             {% empty %}
             <p class="text-red-500 col-span-2">No barcodes uploaded</p>
@@ -65,9 +85,16 @@
         <div class="space-y-4">
             {% for nutrition in product.nutrition_facts.all %}
             <div class="border rounded p-2">
-                <img src="{{ nutrition.image.url }}" 
-                     alt="Nutrition Facts" 
-                     class="w-full">
+                {% if not nutrition.is_uploaded %}
+                    <div class="bg-gray-100 p-4 text-center">
+                        <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
+                        <p class="text-sm text-gray-500 break-all">{{ nutrition.device_filename }}</p>
+                    </div>
+                {% elif nutrition.is_uploaded and nutrition.image %}
+                    <img src="{{ nutrition.image.url }}" 
+                         alt="Nutrition Facts" 
+                         class="w-full">
+                {% endif %}
                 {% if nutrition.notes %}
                 <p class="mt-2 text-gray-600">Notes: {{ nutrition.notes }}</p>
                 {% endif %}
@@ -93,9 +120,16 @@
         <div class="space-y-4">
             {% for ingredient in product.ingredients.all %}
             <div class="border rounded p-2">
-                <img src="{{ ingredient.image.url }}" 
-                     alt="Ingredients" 
-                     class="w-full">
+                {% if not ingredient.is_uploaded %}
+                    <div class="bg-gray-100 p-4 text-center">
+                        <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
+                        <p class="text-sm text-gray-500 break-all">{{ ingredient.device_filename }}</p>
+                    </div>
+                {% elif ingredient.is_uploaded and ingredient.image %}
+                    <img src="{{ ingredient.image.url }}" 
+                         alt="Ingredients" 
+                         class="w-full">
+                {% endif %}
                 {% if ingredient.notes %}
                 <p class="mt-2 text-gray-600">Notes: {{ ingredient.notes }}</p>
                 {% endif %}
@@ -121,10 +155,20 @@
         <div class="grid grid-cols-2 gap-4">
             {% for image in product.product_images.all %}
             <div class="border rounded p-2">
-                <img src="{{ image.image.url }}" 
-                     alt="Product {{ image.get_image_type_display }}" 
-                     class="w-full h-40 object-cover">
-                <p class="mt-2 text-gray-600">{{ image.get_image_type_display }}</p>
+                {% if not image.is_uploaded %}
+                    <div class="bg-gray-100 p-4 text-center h-40 flex items-center justify-center">
+                        <div>
+                            <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
+                            <p class="text-sm text-gray-500 break-all">{{ image.device_filename }}</p>
+                            <p class="mt-2 font-medium">{{ image.get_image_type_display }}</p>
+                        </div>
+                    </div>
+                {% elif image.is_uploaded and image.image %}
+                    <img src="{{ image.image.url }}" 
+                         alt="Product {{ image.get_image_type_display }}" 
+                         class="w-full h-40 object-cover">
+                    <p class="mt-2 text-gray-600">{{ image.get_image_type_display }}</p>
+                {% endif %}
                 {% if image.notes %}
                 <p class="mt-1 text-gray-600">Notes: {{ image.notes }}</p>
                 {% endif %}
@@ -145,6 +189,8 @@
                 {% if missing_items %}disabled{% endif %}>
             {% if missing_items %}
                 Please Complete All Sections
+            {% elif photo_queue_mode %}
+                Save for Later Upload
             {% else %}
                 Confirm & Submit
             {% endif %}

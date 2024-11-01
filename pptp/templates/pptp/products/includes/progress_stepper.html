@@ -1,126 +1,126 @@
 <style>
-    .stepper-container {
-      padding: 1rem 0.5rem;
-      width: 100%;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    
-    .stepper {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-      position: relative;
-    }
-    
-    .step:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 15px;
-      left: calc(50% + 20px);
-      width: calc(100% - 40px);
-      height: 2px;
-      background-color: #e5e7eb;
-    }
-    
-    .step.completed:not(:last-child)::after {
-      background-color: #059669;
-    }
-    
-    .step-circle {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 2px solid #e5e7eb;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 0.5rem;
-      position: relative;
-      z-index: 1;
-    }
-    
-    .step.completed .step-circle {
-      background-color: #059669;
-      border-color: #059669;
-    }
-    
-    .step.active .step-circle {
-      border-color: #2563eb;
-      background-color: #eff6ff;
-    }
-    
-    .step-label {
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-    
-    .step.completed .step-label {
-      color: #059669;
-    }
-    
-    .step.active .step-label {
-      color: #2563eb;
-      font-weight: 500;
-    }
-    
-    .step-circle svg {
-      width: 16px;
-      height: 16px;
-    }
-    
-    .step.completed .step-circle svg {
-      color: white;
-    }
-    
-    .step.active .step-circle svg {
-      color: #2563eb;
-    }
-    </style>
-    
-    <div class="stepper-container">
-      <div class="stepper">
-        {% with steps=view_step|default:0|add:"0" %}
-        {% for step in "012345" %}
-        {% with step_num=step|add:"0" %}
-        <div class="step {% if steps > step_num %}completed{% elif steps == step_num %}active{% endif %}">
-          <div class="step-circle">
-            {% if steps > step_num %}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            {% else %}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-            </svg>
-            {% endif %}
-          </div>
-          <span class="step-label">
-            {% if step_num == 0 %}
-              Setup
-            {% elif step_num == 1 %}
-              Barcode
-            {% elif step_num == 2 %}
-              Nutrition
-            {% elif step_num == 3 %}
-              Ingredients
-            {% elif step_num == 4 %}
-              Images
-            {% else %}
-              Review
-            {% endif %}
-          </span>
-        </div>
-        {% endwith %}
-        {% endfor %}
-        {% endwith %}
+  .stepper-container {
+    padding: 1rem 0.5rem;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: calc(50% + 20px);
+    width: calc(100% - 40px);
+    height: 2px;
+    background-color: #e5e7eb;
+  }
+
+  .step.completed:not(:last-child)::after {
+    background-color: #059669;
+  }
+
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #e5e7eb;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step.completed .step-circle {
+    background-color: #059669;
+    border-color: #059669;
+  }
+
+  .step.active .step-circle {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+  }
+
+  .step-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .step.completed .step-label {
+    color: #059669;
+  }
+
+  .step.active .step-label {
+    color: #2563eb;
+    font-weight: 500;
+  }
+
+  .step-circle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .step.completed .step-circle svg {
+    color: white;
+  }
+
+  .step.active .step-circle svg {
+    color: #2563eb;
+  }
+</style>
+
+<div class="stepper-container">
+  <div class="stepper">
+    {% with steps=view_step|default:0|add:"0" %}
+    {% for step in "012345" %}
+    {% with step_num=step|add:"0" %}
+    <div class="step {% if steps > step_num %}completed{% elif steps == step_num %}active{% endif %}">
+      <div class="step-circle">
+        {% if steps > step_num %}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        {% else %}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+        {% endif %}
       </div>
+      <span class="step-label">
+        {% if step_num == 0 %}
+        Setup
+        {% elif step_num == 1 %}
+        Barcode
+        {% elif step_num == 2 %}
+        Nutrition
+        {% elif step_num == 3 %}
+        Ingredients
+        {% elif step_num == 4 %}
+        Images
+        {% else %}
+        Review
+        {% endif %}
+      </span>
     </div>
+    {% endwith %}
+    {% endfor %}
+    {% endwith %}
+  </div>
+</div>

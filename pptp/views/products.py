@@ -14,7 +14,7 @@ from ..forms.products import ProductSetupForm
 
 
 class BaseProductView(LoginRequiredMixin):
-    """New base class for all product-related views"""
+    """Base class for all product-related views"""
     
     def get_pending_upload_count(self):
         """Get total number of pending uploads for the user"""
@@ -26,20 +26,31 @@ class BaseProductView(LoginRequiredMixin):
             ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
         ])
     
+    def get_common_context(self):
+        """Get context data common to all product views"""
+        return {
+            'photo_queue_mode': self.request.session.get('photo_queue_mode', False),
+            'pending_upload_count': self.get_pending_upload_count(),
+        }
+
+
+class BaseProductTemplateView(BaseProductView):
+    """Base class for views that render templates"""
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['photo_queue_mode'] = self.request.session.get('photo_queue_mode', False)
-        context['pending_upload_count'] = self.get_pending_upload_count()
+        context.update(self.get_common_context())
         return context
+    
 
-
-class ProductDashboardView(BaseProductView, TemplateView):
+class ProductDashboardView(BaseProductTemplateView, TemplateView):
     template_name = 'pptp/products/dashboard.html'
 
 
-class BaseProductStepView(BaseProductView):
+class BaseProductStepView(BaseProductTemplateView):
     """Base class for all product submission steps"""
     view_step = None  # Will be set by child classes
+    template_name = 'pptp/products/base_submission.html'  # Default template
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -69,10 +80,17 @@ class BaseProductStepView(BaseProductView):
 
 
 class BaseImageUploadView(BaseProductStepView, CreateView):
-    """Base class for image upload views"""
+    """Base class specifically for image upload views"""
     template_name = 'pptp/products/image_upload_base.html'
-    file_field_name = None  # Must be set by child classes
+    file_field_name = 'image'  # Default value, can be overridden
+    related_name = None  # Must be set by child classes
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.related_name:
+            context['image_obj_list'] = getattr(self.product, self.related_name).all()
+        return context
+
     def form_valid(self, form):
         is_queue_mode = self.request.session.get('photo_queue_mode', False)
         form.instance.product = self.product
@@ -224,10 +242,11 @@ class BulkUploadView(BaseProductView, View):
             product.save()
 
 
-class ProductSubmissionStartView(BaseProductView, CreateView):
+class ProductSubmissionStartView(BaseProductStepView, CreateView):
     model = Product
     fields = []
     template_name = 'pptp/products/submission_start.html'
+    view_step = -1  # Setting this to -1 to indicate it's before step 0
     
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -236,13 +255,30 @@ class ProductSubmissionStartView(BaseProductView, CreateView):
     def get_success_url(self):
         return reverse_lazy('products:setup', kwargs={'pk': self.object.pk})
 
+    def is_previous_step_complete(self):
+        # No previous step to complete
+        return True
+    
+    def get_previous_step_url(self):
+        return reverse_lazy('products:dashboard')
+    
+    def get_product(self):
+        # Override to return None since we don't have a product yet
+        return None
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Remove 'product' from context since we don't have one yet
+        context.pop('product', None)
+        return context
+
 
 class BarcodeUploadView(BaseImageUploadView):
     view_step = 1
     model = Barcode
     fields = ['image', 'barcode_number']
     template_name = 'pptp/products/barcode_upload.html'
-    file_field_name = 'image'
+    related_name = 'barcodes'
 
     def is_previous_step_complete(self):
         return bool(self.product.product_name)
@@ -280,7 +316,7 @@ class NutritionFactsUploadView(BaseImageUploadView):
     model = NutritionFacts
     fields = ['image', 'notes']
     template_name = 'pptp/products/nutrition_facts_upload.html'
-    file_field_name = 'image'
+    realted_name = 'nutrition_facts'
 
     def is_previous_step_complete(self):
         return self.product.barcodes.exists()
@@ -318,7 +354,7 @@ class IngredientsUploadView(BaseImageUploadView):
     model = Ingredients
     fields = ['image', 'notes']
     template_name = 'pptp/products/ingredients_upload.html'
-    file_field_name = 'image'
+    related_name = 'ingredients'
 
     def is_previous_step_complete(self):
         return self.product.nutrition_facts.exists()
@@ -345,7 +381,7 @@ class ProductImagesUploadView(BaseImageUploadView):
     model = ProductImage
     fields = ['image', 'image_type', 'notes']
     template_name = 'pptp/products/product_images_upload.html'
-    file_field_name = 'image'
+    related_name = 'product_images'
 
     def is_previous_step_complete(self):
         return self.product.ingredients.exists()

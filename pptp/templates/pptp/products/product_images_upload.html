@@ -11,7 +11,7 @@
         <div class="space-y-2">
             {% for image in product.product_images.all %}
             <div class="border rounded p-2">
-                <img src="{{ image.image.url }}" alt="Product Image" class="w-full mb-2">
+                <img src="{{ image_obj.image.url }}" alt="Product Image" class="w-full mb-2">
                 {% if image.notes %}
                 <p class="text-sm text-gray-600">Notes: {{ image.notes }}</p>
                 {% endif %}
