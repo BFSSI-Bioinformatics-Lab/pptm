@@ -88,7 +88,11 @@ class BaseImageUploadView(BaseProductStepView, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.related_name:
-            context['image_obj_list'] = getattr(self.product, self.related_name).all()
+            # Split images into uploaded and pending
+            queryset = getattr(self.product, self.related_name).all()
+            context['uploaded_images'] = queryset.filter(is_uploaded=True)
+            context['pending_images'] = queryset.filter(is_uploaded=False)
+            context['is_offline_mode'] = self.request.session.get('photo_queue_mode', False)
         return context
 
     def form_valid(self, form):
