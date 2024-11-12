@@ -1,63 +1,65 @@
-{# templates/pptp/products/setup.html #}
+{# Product Setup Template #}
 {% extends "pptp/products/base_submission.html" %}
 {% load i18n %}
 
 {% block submission_content %}
-<div class="max-w-2xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-6">{% trans "Before You Begin" %}</h1>
-    
-    <form method="post" class="space-y-6">
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">{% trans "Before You Begin" %}</h1>
+
+    <form method="post" class="space-y-8">
         {% csrf_token %}
-        
+
         {# Product Name Section #}
-        <div class="space-y-2">
-            <label for="{{ form.product_name.id_for_label }}" class="block font-medium">
-                {% trans "Product Name" %}
-            </label>
+        <div class="space-y-4">
+            <label class="block text-sm font-medium text-gray-700">{% trans "Product Name" %}</label>
             {{ form.product_name }}
             {% if form.product_name.errors %}
-                <p class="text-red-600 text-sm">{{ form.product_name.errors.0 }}</p>
+            <p class="text-sm text-red-600">{{ form.product_name.errors.0 }}</p>
             {% endif %}
-            <p class="text-gray-600 text-sm">
-                {% trans "Enter the complete product name as shown on the packaging." %}
-                <br>
-                {% trans "Good examples:" %}
-                <span class="font-medium">Honey Nut Cheerios, Diet Coke Cherry, Kirkland Organic Eggs</span>
-                <br>
-                {% trans "Not detailed enough:" %}
-                <span class="font-medium">Cheerios, Coke, Eggs</span>
-            </p>
+            <div class="text-sm text-gray-600 space-y-2">
+                <p>{% trans "Enter the complete product name as shown on the packaging." %}</p>
+                <p>
+                    <span class="font-medium">{% trans "Good examples:" %}</span>
+                    <span class="text-gray-900">Honey Nut Cheerios, Diet Coke Cherry, Kirkland Organic Eggs</span>
+                </p>
+                <p>
+                    <span class="font-medium">{% trans "Not detailed enough:" %}</span>
+                    <span class="text-gray-900">Cheerios, Coke, Eggs</span>
+                </p>
+            </div>
         </div>
 
-        {# Product Options Section #}
-        <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
-            <h2 class="font-medium">{% trans "Product Details" %}</h2>
-            <p class="text-gray-600 text-sm mb-4">
-                {% trans "Select all that apply. You can still upload multiple images even if options are not selected." %}
+        {# Product Details Section #}
+        <div class="bg-gray-50 rounded-lg p-6 space-y-6">
+            <h2 class="text-lg font-medium text-gray-900">{% trans "Product Details" %}</h2>
+            <p class="text-sm text-gray-600">
+                {% trans "Select all that apply. You can still upload multiple images even if options are not selected."
+                %}
             </p>
-            
+
             {% for field in form %}
-                {% if field.name != 'product_name' %}
-                    <div class="flex items-start space-x-3">
-                        <div class="flex items-center h-5">
-                            {{ field }}
-                        </div>
-                        <div class="flex-1">
-                            <label for="{{ field.id_for_label }}" class="font-medium">
-                                {{ field.label }}
-                            </label>
-                            <p class="text-gray-600 text-sm">{{ field.help_text }}</p>
-                        </div>
-                    </div>
-                {% endif %}
+            {% if field.name != 'product_name' %}
+            <div class="flex items-start space-x-3">
+                <div class="flex items-center h-5">
+                    {{ field }}
+                </div>
+                <div class="flex-1">
+                    <label for="{{ field.id_for_label }}" class="text-sm font-medium text-gray-900">
+                        {{ field.label }}
+                    </label>
+                    <p class="text-sm text-gray-600">{{ field.help_text }}</p>
+                </div>
+            </div>
+            {% endif %}
             {% endfor %}
         </div>
 
-        <div class="flex justify-end space-x-4">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <div class="flex justify-end">
+            <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
                 {% trans "Continue to Barcode Upload" %}
             </button>
         </div>
     </form>
 </div>
-{% endblock submission_content %}
+{% endblock %}

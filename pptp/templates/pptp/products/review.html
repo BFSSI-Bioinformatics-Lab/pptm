@@ -1,200 +1,227 @@
+{# templates/pptp/products/review.html #}
 {% extends "pptp/products/base_submission.html" %}
 {% load i18n %}
 
 {% block submission_content %}
-<div class="bg-white rounded-lg shadow p-6">
-    <h1 class="text-2xl font-bold mb-4">Review Submission</h1>
+<div class="card">
+    <div class="card-body">
+        <h1 class="h3 mb-4">Review Submission</h1>
 
-    {% if messages %}
-    <div class="mb-4">
-        {% for message in messages %}
-        <div class="p-4 {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %} rounded">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if photo_queue_mode %}
-    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
-        <p class="font-bold">{% trans "Photo Queue Mode Active" %}</p>
-        <p>{% trans "Some images are pending upload. They will be fully processed when you're back online." %}</p>
-    </div>
-    {% endif %}
-
-    {% if missing_items %}
-    <div class="mb-6 p-4 bg-yellow-100 text-yellow-700 rounded">
-        <h2 class="font-semibold mb-2">Missing Items:</h2>
-        <ul class="list-disc list-inside">
-            {% for item in missing_items %}
-            <li>{{ item }}</li>
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                {{ message }}
+            </div>
             {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-
-    <!-- Barcodes Section -->
-    <section class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Barcodes</h2>
-            <form method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="edit_barcodes" 
-                        class="text-blue-500 hover:text-blue-700">
-                    Edit Barcodes
-                </button>
-            </form>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-            {% for barcode in product.barcodes.all %}
-            <div class="border rounded p-2">
-                {% if not barcode.is_uploaded %}
-                    <div class="bg-gray-100 p-4 text-center h-40 flex items-center justify-center">
-                        <div>
-                            <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
-                            <p class="text-sm text-gray-500 break-all">{{ barcode.device_filename }}</p>
+        {% endif %}
+
+        {% if photo_queue_mode %}
+        <div class="alert alert-primary border-start border-4 mb-4">
+            <h4 class="alert-heading">{% trans "Photo Queue Mode Active" %}</h4>
+            <p class="mb-0">{% trans "Some images are pending upload. They will be fully processed when you're back online." %}</p>
+        </div>
+        {% endif %}
+
+        {% if missing_items %}
+        <div class="alert alert-warning mb-4">
+            <h4 class="alert-heading mb-2">Missing Items:</h4>
+            <ul class="list-unstyled mb-0">
+                {% for item in missing_items %}
+                <li><i class="bi bi-exclamation-circle me-2"></i>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Barcodes Section -->
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Barcodes</h2>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="edit_barcodes" 
+                            class="btn btn-link text-decoration-none p-0">
+                        <i class="bi bi-pencil me-1"></i>Edit Barcodes
+                    </button>
+                </form>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                {% for barcode in product.barcodes.all %}
+                <div class="col">
+                    <div class="card h-100">
+                        {% if not barcode.is_uploaded %}
+                            <div class="card-body bg-light text-center d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <div>
+                                    <p class="text-secondary fw-medium mb-2">{% trans "Pending Upload" %}</p>
+                                    <p class="small text-muted text-break mb-0">{{ barcode.device_filename }}</p>
+                                </div>
+                            </div>
+                        {% elif barcode.is_uploaded and barcode.image %}
+                            <img src="{{ barcode.image.url }}" 
+                                 alt="Barcode" 
+                                 class="card-img-top"
+                                 style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        {% if barcode.barcode_number %}
+                            <div class="card-footer">
+                                <span class="font-monospace small">{{ barcode.barcode_number }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>No barcodes uploaded</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Nutrition Facts Section -->
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Nutrition Facts</h2>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="edit_nutrition" 
+                            class="btn btn-link text-decoration-none p-0">
+                        <i class="bi bi-pencil me-1"></i>Edit Nutrition Facts
+                    </button>
+                </form>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                {% for nutrition in product.nutrition_facts.all %}
+                <div class="card">
+                    {% if not nutrition.is_uploaded %}
+                        <div class="card-body bg-light text-center">
+                            <p class="text-secondary fw-medium mb-2">{% trans "Pending Upload" %}</p>
+                            <p class="small text-muted text-break mb-0">{{ nutrition.device_filename }}</p>
                         </div>
+                    {% elif nutrition.is_uploaded and nutrition.image %}
+                        <img src="{{ nutrition.image.url }}" 
+                             alt="Nutrition Facts" 
+                             class="card-img-top">
+                    {% endif %}
+                    {% if nutrition.notes %}
+                    <div class="card-footer">
+                        <small class="text-secondary">Notes: {{ nutrition.notes }}</small>
                     </div>
-                {% elif barcode.is_uploaded and barcode.image %}
-                    <img src="{{ barcode.image.url }}" 
-                         alt="Barcode" 
-                         class="w-full h-40 object-cover">
-                {% endif %}
-                {% if barcode.barcode_number %}
-                    <p class="mt-2 text-sm font-mono">{{ barcode.barcode_number }}</p>
-                {% endif %}
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>No nutrition facts uploaded</p>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p class="text-red-500 col-span-2">No barcodes uploaded</p>
-            {% endfor %}
-        </div>
-    </section>
+        </section>
 
-    <!-- Nutrition Facts Section -->
-    <section class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Nutrition Facts</h2>
-            <form method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="edit_nutrition" 
-                        class="text-blue-500 hover:text-blue-700">
-                    Edit Nutrition Facts
-                </button>
-            </form>
-        </div>
-        <div class="space-y-4">
-            {% for nutrition in product.nutrition_facts.all %}
-            <div class="border rounded p-2">
-                {% if not nutrition.is_uploaded %}
-                    <div class="bg-gray-100 p-4 text-center">
-                        <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
-                        <p class="text-sm text-gray-500 break-all">{{ nutrition.device_filename }}</p>
-                    </div>
-                {% elif nutrition.is_uploaded and nutrition.image %}
-                    <img src="{{ nutrition.image.url }}" 
-                         alt="Nutrition Facts" 
-                         class="w-full">
-                {% endif %}
-                {% if nutrition.notes %}
-                <p class="mt-2 text-gray-600">Notes: {{ nutrition.notes }}</p>
-                {% endif %}
+        <!-- Ingredients Section -->
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Ingredients</h2>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="edit_ingredients" 
+                            class="btn btn-link text-decoration-none p-0">
+                        <i class="bi bi-pencil me-1"></i>Edit Ingredients
+                    </button>
+                </form>
             </div>
-            {% empty %}
-            <p class="text-red-500">No nutrition facts uploaded</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- Ingredients Section -->
-    <section class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Ingredients</h2>
-            <form method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="edit_ingredients" 
-                        class="text-blue-500 hover:text-blue-700">
-                    Edit Ingredients
-                </button>
-            </form>
-        </div>
-        <div class="space-y-4">
-            {% for ingredient in product.ingredients.all %}
-            <div class="border rounded p-2">
-                {% if not ingredient.is_uploaded %}
-                    <div class="bg-gray-100 p-4 text-center">
-                        <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
-                        <p class="text-sm text-gray-500 break-all">{{ ingredient.device_filename }}</p>
-                    </div>
-                {% elif ingredient.is_uploaded and ingredient.image %}
-                    <img src="{{ ingredient.image.url }}" 
-                         alt="Ingredients" 
-                         class="w-full">
-                {% endif %}
-                {% if ingredient.notes %}
-                <p class="mt-2 text-gray-600">Notes: {{ ingredient.notes }}</p>
-                {% endif %}
-            </div>
-            {% empty %}
-            <p class="text-red-500">No ingredients uploaded</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- Product Images Section -->
-    <section class="mb-8">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Product Images</h2>
-            <form method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" name="action" value="edit_images" 
-                        class="text-blue-500 hover:text-blue-700">
-                    Edit Images
-                </button>
-            </form>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-            {% for image in product.product_images.all %}
-            <div class="border rounded p-2">
-                {% if not image.is_uploaded %}
-                    <div class="bg-gray-100 p-4 text-center h-40 flex items-center justify-center">
-                        <div>
-                            <p class="text-gray-600 font-medium">{% trans "Pending Upload" %}</p>
-                            <p class="text-sm text-gray-500 break-all">{{ image.device_filename }}</p>
-                            <p class="mt-2 font-medium">{{ image.get_image_type_display }}</p>
+            <div class="d-flex flex-column gap-3">
+                {% for ingredient in product.ingredients.all %}
+                <div class="card">
+                    {% if not ingredient.is_uploaded %}
+                        <div class="card-body bg-light text-center">
+                            <p class="text-secondary fw-medium mb-2">{% trans "Pending Upload" %}</p>
+                            <p class="small text-muted text-break mb-0">{{ ingredient.device_filename }}</p>
                         </div>
+                    {% elif ingredient.is_uploaded and ingredient.image %}
+                        <img src="{{ ingredient.image.url }}" 
+                             alt="Ingredients" 
+                             class="card-img-top">
+                    {% endif %}
+                    {% if ingredient.notes %}
+                    <div class="card-footer">
+                        <small class="text-secondary">Notes: {{ ingredient.notes }}</small>
                     </div>
-                {% elif image.is_uploaded and image.image %}
-                    <img src="{{ image.image.url }}" 
-                         alt="Product {{ image.get_image_type_display }}" 
-                         class="w-full h-40 object-cover">
-                    <p class="mt-2 text-gray-600">{{ image.get_image_type_display }}</p>
-                {% endif %}
-                {% if image.notes %}
-                <p class="mt-1 text-gray-600">Notes: {{ image.notes }}</p>
-                {% endif %}
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>No ingredients uploaded</p>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p class="text-red-500 col-span-2">No product images uploaded</p>
-            {% endfor %}
-        </div>
-    </section>
+        </section>
 
-    <!-- Submit Button -->
-    <form method="post" class="mt-8">
-        {% csrf_token %}
-        <button type="submit" 
-                name="action" 
-                value="confirm"
-                class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 {% if missing_items %}opacity-50 cursor-not-allowed{% endif %}"
-                {% if missing_items %}disabled{% endif %}>
-            {% if missing_items %}
-                Please Complete All Sections
-            {% elif photo_queue_mode %}
-                Save for Later Upload
-            {% else %}
-                Confirm & Submit
-            {% endif %}
-        </button>
-    </form>
+        <!-- Product Images Section -->
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Product Images</h2>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="edit_images" 
+                            class="btn btn-link text-decoration-none p-0">
+                        <i class="bi bi-pencil me-1"></i>Edit Images
+                    </button>
+                </form>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                {% for image in product.product_images.all %}
+                <div class="col">
+                    <div class="card h-100">
+                        {% if not image.is_uploaded %}
+                            <div class="card-body bg-light text-center d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <div>
+                                    <p class="text-secondary fw-medium mb-2">{% trans "Pending Upload" %}</p>
+                                    <p class="small text-muted text-break mb-0">{{ image.device_filename }}</p>
+                                    <span class="badge bg-secondary mt-2">{{ image.get_image_type_display }}</span>
+                                </div>
+                            </div>
+                        {% elif image.is_uploaded and image.image %}
+                            <img src="{{ image.image.url }}" 
+                                 alt="Product {{ image.get_image_type_display }}" 
+                                 class="card-img-top"
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="card-body pt-2 pb-2">
+                                <span class="badge {% if image.image_type == 'front' %}bg-primary
+                                                  {% elif image.image_type == 'back' %}bg-success
+                                                  {% elif image.image_type == 'side' %}bg-info
+                                                  {% else %}bg-secondary{% endif %}">
+                                    {{ image.get_image_type_display }}
+                                </span>
+                            </div>
+                        {% endif %}
+                        {% if image.notes %}
+                        <div class="card-footer">
+                            <small class="text-secondary">Notes: {{ image.notes }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-danger mb-0"><i class="bi bi-exclamation-circle me-2"></i>No product images uploaded</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Submit Button -->
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" 
+                    name="action" 
+                    value="confirm"
+                    class="btn btn-success w-100 py-2 {% if missing_items %}opacity-50{% endif %}"
+                    {% if missing_items %}disabled{% endif %}>
+                {% if missing_items %}
+                    <i class="bi bi-exclamation-circle me-2"></i>Please Complete All Sections
+                {% elif photo_queue_mode %}
+                    <i class="bi bi-cloud-arrow-up me-2"></i>Save for Later Upload
+                {% else %}
+                    <i class="bi bi-check-circle me-2"></i>Confirm & Submit
+                {% endif %}
+            </button>
+        </form>
+    </div>
 </div>
-{% endblock submission_content %}

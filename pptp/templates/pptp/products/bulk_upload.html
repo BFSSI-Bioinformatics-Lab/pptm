@@ -2,132 +2,133 @@
 {% load i18n %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-6 max-w-lg">
-    <h1 class="text-2xl mb-6 font-semibold">{% trans "Upload Saved Images" %}</h1>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <h1 class="h3 mb-4">{% trans "Upload Saved Images" %}</h1>
 
-    {% if messages %}
-    <div class="mb-6">
-        {% for message in messages %}
-        <div class="p-4 mb-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 class="text-lg mb-4 font-medium">{% trans "Select Images to Upload" %}</h2>
-        
-        <form method="post" enctype="multipart/form-data" id="upload-form" class="space-y-4">
-            {% csrf_token %}
-            
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                <label for="files" class="block cursor-pointer">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    <span class="mt-2 block text-sm text-gray-600">
-                        {% trans "Tap to select images" %}
-                    </span>
-                </label>
-                <input type="file" id="files" name="files" multiple accept="image/*" class="hidden" required>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">{% trans "Select Images to Upload" %}</h2>
+                    
+                    <form method="post" enctype="multipart/form-data" id="upload-form">
+                        {% csrf_token %}
+                        
+                        <div class="upload-area border border-2 border-dashed rounded p-4 text-center bg-light mb-3">
+                            <label for="files" class="d-block cursor-pointer">
+                                <i class="bi bi-plus-circle display-4 text-secondary"></i>
+                                <p class="mt-2 small text-secondary mb-0">
+                                    {% trans "Tap to select images" %}
+                                </p>
+                            </label>
+                            <input type="file" id="files" name="files" multiple accept="image/*" class="d-none" required>
+                        </div>
+
+                        <div id="file-list" class="d-none mb-3">
+                            <h3 class="h6 text-secondary mb-2">{% trans "Selected Files" %}:</h3>
+                            <ul class="list-group list-group-flush bg-light rounded overflow-auto" style="max-height: 200px;"></ul>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-cloud-upload me-2"></i>{% trans "Upload Images" %}
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            <div id="file-list" class="hidden space-y-2">
-                <h3 class="font-medium text-sm text-gray-700">{% trans "Selected Files" %}:</h3>
-                <ul class="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto"></ul>
+            {% if results %}
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">{% trans "Upload Results" %}</h3>
+
+                    <div class="alert {% if results.summary.failed > 0 %}alert-warning{% else %}alert-success{% endif %} mb-3">
+                        <h4 class="alert-heading h6">{% trans "Summary" %}:</h4>
+                        <p class="small mb-0">
+                            {% with success=results.summary.success total=results.summary.total products=results.summary.products_updated|length %}
+                                {% blocktranslate %}
+                                Successfully processed {{ success }} of {{ total }} files.
+                                Updated {{ products }} products.
+                                {% endblocktranslate %}
+                            {% endwith %}
+                        </p>
+                    </div>
+
+                    {% if results.processed %}
+                    <div class="mb-3">
+                        <h4 class="h6 mb-2">{% trans "Successfully Processed" %}:</h4>
+                        <ul class="list-unstyled mb-0">
+                            {% for item in results.processed %}
+                            <li class="d-flex align-items-start small mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                <span>{{ item.filename }} - {{ item.type }} {% trans "for" %} {{ item.product }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if results.errors %}
+                    <div>
+                        <h4 class="h6 mb-2">{% trans "Errors" %}:</h4>
+                        <ul class="list-unstyled mb-0">
+                            {% for error in results.errors %}
+                            <li class="d-flex align-items-start small mb-2">
+                                <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                                <span>{{ error.filename }}: {{ error.error }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-
-            <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                {% trans "Upload Images" %}
-            </button>
-        </form>
+            {% endif %}
+        </div>
     </div>
-
-    {% if results %}
-    <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
-        <div class="text-lg font-medium mb-4">{% trans "Upload Results" %}</div>
-
-        <div class="p-4 rounded-lg {% if results.summary.failed > 0 %}bg-yellow-100{% else %}bg-green-100{% endif %}">
-            <p class="font-medium">{% trans "Summary" %}:</p>
-            <p class="text-sm mt-1">
-                {% with success=results.summary.success total=results.summary.total products=results.summary.products_updated|length %}
-                    {% blocktranslate %}
-                    Successfully processed {{ success }} of {{ total }} files.
-                    Updated {{ products }} products.
-                    {% endblocktranslate %}
-                {% endwith %}
-            </p>
-        </div>
-
-        {% if results.processed %}
-        <div>
-            <h3 class="font-medium mb-2">{% trans "Successfully Processed" %}:</h3>
-            <ul class="space-y-1 text-sm text-gray-600">
-                {% for item in results.processed %}
-                <li class="flex items-start">
-                    <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>{{ item.filename }} - {{ item.type }} {% trans "for" %} {{ item.product }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-
-        {% if results.errors %}
-        <div>
-            <h3 class="font-medium mb-2">{% trans "Errors" %}:</h3>
-            <ul class="space-y-1 text-sm text-red-600">
-                {% for error in results.errors %}
-                <li class="flex items-start">
-                    <svg class="h-5 w-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    <span>{{ error.filename }}: {{ error.error }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const fileInput = document.getElementById('files');
-        const fileList = document.getElementById('file-list');
-        const fileListUl = fileList.querySelector('ul');
-        const uploadButton = document.querySelector('button[type="submit"]');
-        const form = document.getElementById('upload-form');
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('files');
+    const fileList = document.getElementById('file-list');
+    const fileListUl = fileList.querySelector('ul');
+    const uploadButton = document.querySelector('button[type="submit"]');
+    const form = document.getElementById('upload-form');
 
-        fileInput.addEventListener('change', function() {
-            fileListUl.innerHTML = '';
-            if (this.files.length > 0) {
-                fileList.classList.remove('hidden');
-                Array.from(this.files).forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'flex items-center space-x-2';
-                    li.innerHTML = `
-                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                        <span>${file.name}</span>
-                        <span class="text-gray-400">(${Math.round(file.size / 1024)}KB)</span>
-                    `;
-                    fileListUl.appendChild(li);
-                });
-            } else {
-                fileList.classList.add('hidden');
-            }
-        });
-
-        form.addEventListener('submit', function() {
-            uploadButton.disabled = true;
-            uploadButton.textContent = '{% trans "Uploading..." %}';
-        });
+    fileInput.addEventListener('change', function() {
+        fileListUl.innerHTML = '';
+        if (this.files.length > 0) {
+            fileList.classList.remove('d-none');
+            Array.from(this.files).forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item bg-transparent d-flex align-items-center';
+                li.innerHTML = `
+                    <i class="bi bi-image text-secondary me-2"></i>
+                    <span class="me-auto">${file.name}</span>
+                    <small class="text-secondary">(${Math.round(file.size / 1024)}KB)</small>
+                `;
+                fileListUl.appendChild(li);
+            });
+        } else {
+            fileList.classList.add('d-none');
+        }
     });
+
+    form.addEventListener('submit', function() {
+        uploadButton.disabled = true;
+        uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>{% trans "Uploading..." %}';
+    });
+});
 </script>
+
 {% endblock content %}

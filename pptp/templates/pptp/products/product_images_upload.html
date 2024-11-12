@@ -2,41 +2,111 @@
 {% extends "pptp/products/base_submission.html" %}
 
 {% block submission_content %}
-<div class="bg-white rounded-lg shadow p-6">
-    <h1 class="text-2xl font-bold mb-4">Upload Product Images</h1>
-    <p class="mb-4">Take a clear photo of all sides of the product.</p>
+<div class="card">
+    <div class="card-body">
+        <h1 class="h3 mb-3">Upload Product Images</h1>
+        <p class="text-secondary mb-4">Take a clear photo of all sides of the product.</p>
 
-    <div class="mb-6">
-        <h2 class="font-semibold mb-2">Uploaded Product Images</h2>
-        <div class="space-y-2">
-            {% for image in product.product_images.all %}
-            <div class="border rounded p-2">
-                <img src="{{ image_obj.image.url }}" alt="Product Image" class="w-full mb-2">
-                {% if image.notes %}
-                <p class="text-sm text-gray-600">Notes: {{ image.notes }}</p>
+        <div class="mb-4">
+            <h2 class="h5 mb-3">Uploaded Product Images</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                {% for image in product.product_images.all %}
+                <div class="col">
+                    <div class="card">
+                        <img src="{{ image.image.url }}" 
+                             alt="Product Image" 
+                             class="card-img-top">
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge {% if image.image_type == 'front' %}bg-primary
+                                                      {% elif image.image_type == 'back' %}bg-success
+                                                      {% elif image.image_type == 'side' %}bg-info
+                                                      {% else %}bg-secondary{% endif %} mb-2">
+                                        {{ image.get_image_type_display }}
+                                    </span>
+                                    
+                                    {% if image.notes %}
+                                    <p class="small text-secondary mb-0">
+                                        {{ image.notes }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                
+                                <button type="button"
+                                        data-table-id="{{ image.id }}"
+                                        class="btn btn-outline-danger btn-sm delete-table">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">
+                    {{ field.label }}
+                </label>
+                {% if field.field.widget_type == 'file' %}
+                <div class="input-group">
+                    {{ field }}
+                </div>
+                {% else %}
+                {{ field }}
                 {% endif %}
-                <button 
-                    data-table-id="{{ image.id }}"
-                    class="delete-table text-red-500 hover:text-red-700 mt-2">
-                    Delete
-                </button>
+                {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ field.errors }}
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
-        </div>
-    </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-4">
-        {% csrf_token %}
-        {{ form.as_p }}
-        
-        <div class="flex gap-4">
-            <button type="submit" name="add_more" class="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600">
-                Add Another Image
-            </button>
-            <button type="submit" name="continue" class="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600">
-                Continue
-            </button>
-        </div>
-    </form>
+            <div class="row g-3">
+                <div class="col">
+                    <button type="submit" 
+                            name="add_more" 
+                            class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Add Another Image
+                    </button>
+                </div>
+                <div class="col">
+                    <button type="submit" 
+                            name="continue" 
+                            class="btn btn-success w-100">
+                        <i class="bi bi-arrow-right-circle me-1"></i>
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
-{% endblock submission_content %}
+
+<!-- Add this script at the end of your template -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-table');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this image?')) {
+                // Add your delete logic here
+                console.log('Delete image with ID:', this.dataset.tableId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

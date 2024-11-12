@@ -2,20 +2,37 @@
 {% extends "pptp/products/base_submission.html" %}
 
 {% block submission_content %}
-<div class="bg-white rounded-lg shadow p-6">
-    <h1 class="text-2xl font-bold mb-4">Start New Product Submission</h1>
-    <p class="mb-6">You'll need to:</p>
-    <ul class="list-disc list-inside mb-6 space-y-2">
-        <li>Take photo(s) of the barcode(s)</li>
-        <li>Capture the Nutrition Facts table</li>
-        <li>Photograph the ingredients list</li>
-        <li>Take photos of all sides of the package</li>
-    </ul>
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
-        <button type="submit" class="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600">
-            Begin Submission
-        </button>
-    </form>
+<div class="card">
+    <div class="card-body">
+        <h1 class="h3 mb-4">Start New Product Submission</h1>
+        
+        <p class="mb-3">You'll need to:</p>
+        
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item d-flex align-items-center">
+                <i class="bi bi-camera me-2"></i>
+                Take photo(s) of the barcode(s)
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                <i class="bi bi-table me-2"></i>
+                Capture the Nutrition Facts table
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                <i class="bi bi-card-text me-2"></i>
+                Photograph the ingredients list
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                <i class="bi bi-box me-2"></i>
+                Take photos of all sides of the package
+            </li>
+        </ul>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary w-100 py-2">
+                Begin Submission
+            </button>
+        </form>
+    </div>
 </div>
 {% endblock submission_content %}
