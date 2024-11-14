@@ -1,6 +1,7 @@
 {# Base Layout Template #}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
@@ -19,7 +20,7 @@
             padding-left: 1rem;
             padding-right: 1rem;
         }
-        
+
         /* Improve tap targets on mobile */
         .navbar-nav .nav-link,
         .nav-link,
@@ -39,27 +40,43 @@
         }
     </style>
 </head>
+
 <body class="min-vh-100 bg-light d-flex flex-column">
     {# Header Component #}
     <header class="bg-white shadow-sm">
         <nav class="navbar navbar-light">
-            <div class="container">
-                <div class="w-100 d-flex justify-content-between align-items-center">
-                    <a href="{% url 'products:dashboard' %}" class="navbar-brand text-decoration-none">
-                        <span class="fs-5 fw-bold text-dark">Product Photos</span>
+          <div class="container">
+            <div class="w-100 d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'products:dashboard' %}" class="navbar-brand text-decoration-none">
+                  <span class="fs-5 fw-bold text-dark">Product Photos</span>
+                </a>
+                {% if user.is_authenticated %}
+                  <form method="post" action="{% url 'products:toggle_photo_queue' %}" class="d-inline-block">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if request.session.photo_queue_mode %}btn-success{% else %}btn-outline-secondary{% endif %} btn-sm rounded-pill">
+                      <i class="bi bi-camera-fill me-1"></i>
+                      Queue Mode {% if request.session.photo_queue_mode %}ON{% else %}OFF{% endif %}
+                    </button>
+                  </form>
+                  {% if pending_upload_count > 0 %}
+                    <a href="{% url 'products:bulk_upload' %}" class="btn btn-warning btn-sm rounded-pill">
+                      <i class="bi bi-cloud-upload me-1"></i>
+                      {{ pending_upload_count }} Pending
                     </a>
-                    {% if user.is_authenticated %}
-                    <div class="d-flex align-items-center">
-                        <span class="text-secondary me-3 d-none d-sm-inline">{{ user.username }}</span>
-                        <a href="{% url 'account_logout' %}" 
-                           class="btn btn-outline-secondary btn-sm"
-                           role="button">Logout</a>
-                    </div>
-                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% if user.is_authenticated %}
+                <div class="d-flex align-items-center gap-2">
+                  <span class="text-secondary d-none d-sm-inline">{{ user.email }}</span>
+                  <a href="{% url 'account_logout' %}" class="btn btn-outline-secondary btn-sm" role="button">Logout</a>
                 </div>
+              {% endif %}
             </div>
+          </div>
         </nav>
-    </header>
+      </header>
 
     {# Main Content Area #}
     <main class="flex-grow-1">
@@ -70,13 +87,9 @@
                 {% for message in messages %}
                 <div class="alert alert-dismissible fade show {% if message.tags == 'error' %}alert-danger
                              {% elif message.tags == 'success' %}alert-success
-                             {% else %}alert-primary{% endif %}"
-                     role="alert">
+                             {% else %}alert-primary{% endif %}" role="alert">
                     {{ message }}
-                    <button type="button" 
-                            class="btn-close" 
-                            data-bs-dismiss="alert" 
-                            aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endfor %}
             </div>
@@ -90,4 +103,5 @@
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

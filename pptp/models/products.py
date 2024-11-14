@@ -18,8 +18,7 @@ class Product(models.Model):
         related_name='submitted_products'
     )
     submission_complete = models.BooleanField(default=False)
-    
-    # Offline mode fields
+
     is_offline = models.BooleanField(
         default=False,
         help_text=_("Whether this product was created in offline mode")
@@ -35,9 +34,18 @@ class Product(models.Model):
         max_length=255,
         help_text=_("Full product name as shown on packaging")
     )
+
     is_variety_pack = models.BooleanField(
         default=False,
         help_text=_("Check if this is a variety/multi-pack product")
+    )
+    is_supplemented_food = models.BooleanField(
+        default=False,
+        help_text=_("Check if this is a Supplemented Food as indicated by the front-of-pack caution identifier and supplemented food facts table")
+    )
+    has_front_of_pack_label = models.BooleanField(
+        default=False,
+        help_text=_("Check if this has a front of pack nutrition symbol")
     )
     has_multiple_nutrition_facts = models.BooleanField(
         default=False,
@@ -59,6 +67,7 @@ class Product(models.Model):
     
     def __str__(self):
         return f"{self.product_name} (Product {self.id})"
+
 
 class BaseImageModel(models.Model):
     """

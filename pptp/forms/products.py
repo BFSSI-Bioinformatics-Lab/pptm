@@ -9,7 +9,9 @@ class ProductSetupForm(forms.ModelForm):
         model = Product
         fields = [
             'product_name',
+            'is_supplemented_food',
             'is_variety_pack',
+            'has_front_of_pack_label',
             'has_multiple_nutrition_facts',
             'has_multiple_barcodes',
         ]
