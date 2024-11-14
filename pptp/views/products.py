@@ -144,20 +144,8 @@ class TogglePhotoQueueMode(BaseProductView, View):
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
-from django.contrib import messages
-from django.db import transaction
-from django.utils.translation import gettext_lazy as _
-from django.http import JsonResponse
-
-
 class BulkUploadView(LoginRequiredMixin, TemplateView):
-    """
-    Handle bulk image upload for offline mode products.
-    Matches uploaded files with pending records and updates them.
-    """
+    """Handle bulk image upload for offline mode products."""
     template_name = 'pptp/products/bulk_upload.html'
 
     def get_pending_records(self):
@@ -190,6 +178,7 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Get fresh count of pending records
         context['pending_files'] = self.get_pending_records()
         
         if 'upload_results' in self.request.session:
@@ -209,9 +198,9 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 messages.error(request, _("No files were selected"))
                 return redirect('products:bulk_upload')
 
-            results = self.process_files(files)
+            with transaction.atomic():
+                results = self.process_files(files)
             
-            # Add summary messages
             if results['summary']['success'] > 0:
                 messages.success(
                     request,
@@ -226,6 +215,7 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                     {'count': results['summary']['failed']}
                 )
 
+            # Store results for next page load
             request.session['upload_results'] = results
             
         except Exception as e:
@@ -241,28 +231,28 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
 
     def check_product_completion(self, product):
         """Check if all required files for a product have been uploaded."""
-        pending_uploads = any([
-            product.barcodes.filter(is_uploaded=False).exists(),
-            product.nutrition_facts.filter(is_uploaded=False).exists(),
-            product.ingredients.filter(is_uploaded=False).exists(),
-            product.product_images.filter(is_uploaded=False).exists()
-        ])
-        
-        if not pending_uploads:
-            product.is_offline = False
-            product.save()
+        with transaction.atomic():
+            # Re-fetch product to get latest state
+            product.refresh_from_db()
             
-            messages.success(
-                self.request,
-                _("All files uploaded for product: %s") % product.product_name
-            )
+            pending_uploads = any([
+                product.barcodes.filter(is_uploaded=False).exists(),
+                product.nutrition_facts.filter(is_uploaded=False).exists(),
+                product.ingredients.filter(is_uploaded=False).exists(),
+                product.product_images.filter(is_uploaded=False).exists()
+            ])
+            
+            if not pending_uploads:
+                product.is_offline = False
+                product.save()
+                
+                messages.success(
+                    self.request,
+                    _("All files uploaded for product: %s") % product.product_name
+                )
 
-    @transaction.atomic
     def process_files(self, files):
-        """
-        Process uploaded files and match them with pending records.
-        Returns dict with processing results.
-        """
+        """Process uploaded files and match them with pending records."""
         results = {
             'processed': [],
             'errors': [],
@@ -274,26 +264,22 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
             }
         }
 
-        # Create filename lookup
         filename_map = {f.name: f for f in files}
-        
-        # Get all relevant pending records in a single query
         models_to_check = [Barcode, NutritionFacts, Ingredients, ProductImage]
         pending_records = []
         
+        # Get all pending records in a single query
         for model in models_to_check:
-            records = model.objects.filter(
+            records = model.objects.select_related('product').filter(
                 product__created_by=self.request.user,
                 product__is_offline=True,
                 is_uploaded=False,
                 device_filename__in=filename_map.keys()
-            ).select_related('product')
+            )
             pending_records.extend(records)
 
-        # Track processed filenames
         processed_filenames = set()
 
-        # Process records
         for record in pending_records:
             try:
                 file = filename_map.get(record.device_filename)
@@ -332,29 +318,8 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
             })
             results['summary']['failed'] += 1
 
-        # Convert set to list for serialization
         results['summary']['products_updated'] = list(results['summary']['products_updated'])
         return results
-    
-    def get_image_field_name(self, record):
-        """Get the correct image field name based on record type"""
-        if isinstance(record, Barcode):
-            return 'barcode_image'
-        return 'image'
-
-    def check_product_completion(self, product):
-        """Check if all files for a product have been uploaded"""
-        all_uploaded = not any([
-            product.barcodes.filter(is_uploaded=False).exists(),
-            product.nutrition_facts.filter(is_uploaded=False).exists(),
-            product.ingredients.filter(is_uploaded=False).exists(),
-            product.product_images.filter(is_uploaded=False).exists()
-        ])
-        
-        if all_uploaded:
-            product.is_offline = False
-            product.save()
-
 
 class ProductSubmissionStartView(BaseProductStepView, CreateView):
     model = Product
