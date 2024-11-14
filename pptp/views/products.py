@@ -259,7 +259,6 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 )
 
     def process_files(self, files):
-        """Process uploaded files and match them with pending records."""
         results = {
             'processed': [],
             'errors': [],
@@ -267,7 +266,7 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 'total': len(files),
                 'success': 0,
                 'failed': 0,
-                'products_updated': []
+                'products_updated': set()
             }
         }
 
@@ -275,7 +274,6 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
         models_to_check = [Barcode, NutritionFacts, Ingredients, ProductImage]
         pending_records = []
         
-        # Get all pending records in a single query
         for model in models_to_check:
             records = model.objects.select_related('product').filter(
                 product__created_by=self.request.user,
@@ -307,8 +305,6 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 results['summary']['success'] += 1
                 results['summary']['products_updated'].add(record.product.id)
 
-                self.check_product_completion(record.product)
-
             except Exception as e:
                 results['errors'].append({
                     'filename': record.device_filename,
@@ -321,19 +317,13 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
         for filename in unmatched_files:
             results['errors'].append({
                 'filename': filename,
-                'error': _('No matching pending upload found for this file')
+                'error': str(_('No matching pending upload found for this file'))
             })
             results['summary']['failed'] += 1
 
         results['summary']['products_updated'] = list(results['summary']['products_updated'])
-                
-        # Convert any lazy translation objects to strings
-        for error in results['errors']:
-            if 'error' in error:
-                error['error'] = str(error['error'])
-        
         return results
-
+    
 class ProductSubmissionStartView(BaseProductStepView, CreateView):
     model = Product
     fields = []
