@@ -82,17 +82,13 @@ class BaseProductStepView(BaseProductTemplateView):
 class BaseImageUploadView(BaseProductStepView, CreateView):
     """Base class specifically for image upload views"""
     template_name = 'pptp/products/image_upload_base.html'
-    file_field_name = 'image'  # Default value, can be overridden
-    related_name = None  # Must be set by child classes
+    file_field_name = 'image'
+    related_name = None
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.related_name:
-            # Split images into uploaded and pending
-            queryset = getattr(self.product, self.related_name).all()
-            context['uploaded_images'] = queryset.filter(is_uploaded=True)
-            context['pending_images'] = queryset.filter(is_uploaded=False)
-            context['is_offline_mode'] = self.request.session.get('photo_queue_mode', False)
+            context['image_obj_list'] = getattr(self.product, self.related_name).all()
         return context
 
     def form_valid(self, form):
@@ -106,6 +102,11 @@ class BaseImageUploadView(BaseProductStepView, CreateView):
                 form.instance.is_uploaded = False
                 # Don't save the actual file
                 setattr(form.instance, self.file_field_name, None)
+                
+                # Ensure product is marked as offline
+                if not self.product.is_offline:
+                    self.product.is_offline = True
+                    self.product.save()
         else:
             # Normal mode - save the file
             form.instance.is_uploaded = True
@@ -126,7 +127,17 @@ class ProductSetupView(BaseProductStepView, UpdateView):
 class TogglePhotoQueueMode(BaseProductView, View):
     def post(self, request):
         current_mode = request.session.get('photo_queue_mode', False)
-        request.session['photo_queue_mode'] = not current_mode
+        new_mode = not current_mode
+        request.session['photo_queue_mode'] = new_mode
+        
+        messages.info(
+            request,
+            _("Photo Queue Mode {}").format(
+                _("enabled - Photos will be saved for later upload") if new_mode 
+                else _("disabled - Photos will be uploaded immediately")
+            )
+        )
+        
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
     def get(self, request):
@@ -349,29 +360,28 @@ class ProductSubmissionStartView(BaseProductStepView, CreateView):
     model = Product
     fields = []
     template_name = 'pptp/products/submission_start.html'
-    view_step = -1  # Setting this to -1 to indicate it's before step 0
+    view_step = -1
     
     def form_valid(self, form):
         form.instance.created_by = self.request.user
+        # Set offline mode based on session setting
+        form.instance.is_offline = self.request.session.get('photo_queue_mode', False)
         return super().form_valid(form)
     
     def get_success_url(self):
         return reverse_lazy('products:setup', kwargs={'pk': self.object.pk})
 
     def is_previous_step_complete(self):
-        # No previous step to complete
         return True
     
     def get_previous_step_url(self):
         return reverse_lazy('products:dashboard')
     
     def get_product(self):
-        # Override to return None since we don't have a product yet
         return None
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Remove 'product' from context since we don't have one yet
         context.pop('product', None)
         return context
 
