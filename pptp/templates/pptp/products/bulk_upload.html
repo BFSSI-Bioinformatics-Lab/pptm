@@ -100,11 +100,10 @@
                     <div
                         class="alert {% if results.summary.failed > 0 %}alert-warning{% else %}alert-success{% endif %} mb-3">
                         <h4 class="alert-heading h6">{% trans "Summary" %}:</h4>
-                        {% with total=results.summary.total success=results.summary.success
-                        products=results.summary.products_updated|length %}
-                        {% trans "Successfully processed" %} {{ success }} {% trans "of" %} {{ total }} {% trans "files.
-                        Updated" %} {{ products }} {% trans "products." %}
-                        {% endwith %}
+                            {% with total=results.summary.total success=results.summary.success products=results.summary.products_updated|length %}
+                            {% trans "Successfully processed" %} {{ success }} {% trans "of" %} {{ total }} {% trans "files." %} 
+                            {% trans "Updated" %} {{ products }} {% trans "products." %}
+                            {% endwith %}
                     </div>
 
                     {% if results.processed %}
