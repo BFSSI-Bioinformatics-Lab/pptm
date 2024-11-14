@@ -47,32 +47,41 @@
 
             <div class="card mb-4">
                 <div class="card-body">
-                  <h2 class="h5 mb-3">{% trans "Select Images to Upload" %}</h2>
-                  {% csrf_token %}
-                  
-                  <label class="upload-area border border-2 border-dashed rounded p-4 text-center bg-light mb-3">
-                    <!-- Desktop Message -->
-                    <div class="d-none d-md-block">
-                      <i class="bi bi-cloud-upload fs-3 mb-2"></i>
-                      <p class="mb-0">{% trans "Click to browse files" %}</p>
-                    </div>
-                    
-                    <!-- Mobile Message -->
-                    <div class="d-md-none">
-                      <i class="bi bi-camera fs-3 mb-2"></i>
-                      <p class="mb-0">{% trans "Tap to take photos or select from gallery" %}</p>
-                    </div>
-                    
-                    <input type="file" class="d-none" accept="image/*" multiple capture="environment">
-                  </label>
-              
-                  <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-cloud-upload me-1"></i>
-                    {% trans "Upload Images" %}
-                  </button>
+                    <h2 class="h5 mb-3">{% trans "Select Images to Upload" %}</h2>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <label class="upload-area border border-2 border-dashed rounded p-4 text-center bg-light mb-3">
+                            <!-- Desktop Message -->
+                            <div class="d-none d-md-block">
+                                <i class="bi bi-cloud-upload fs-3 mb-2"></i>
+                                <p class="mb-0">{% trans "Click to browse files" %}</p>
+                            </div>
+
+                            <!-- Mobile Message -->
+                            <div class="d-md-none">
+                                <i class="bi bi-camera fs-3 mb-2"></i>
+                                <p class="mb-0">{% trans "Tap to take photos or select from gallery" %}</p>
+                            </div>
+
+                            <input type="file" class="d-none" accept="image/*" multiple capture="environment"
+                                onchange="updateFileList(this)" name="files">
+                        </label>
+
+                        <!-- File List -->
+                        <div id="fileList" class="d-none mb-3">
+                            <h3 class="h6 text-secondary mb-2">{% trans "Selected Files" %}:</h3>
+                            <ul class="list-group mb-3">
+                            </ul>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="uploadButton" disabled>
+                            <i class="bi bi-cloud-upload me-1"></i>
+                            {% trans "Upload Images" %}
+                        </button>
+                    </form>
                 </div>
-              </div>
-              
+            </div>
 
             {% if results %}
             <div class="card">
@@ -81,10 +90,12 @@
                     <div
                         class="alert {% if results.summary.failed > 0 %}alert-warning{% else %}alert-success{% endif %} mb-3">
                         <h4 class="alert-heading h6">{% trans "Summary" %}:</h4>
-                            {% with total=results.summary.total success=results.summary.success products=results.summary.products_updated|length %}
-                            {% trans "Successfully processed" %} {{ success }} {% trans "of" %} {{ total }} {% trans "files." %} 
-                            {% trans "Updated" %} {{ products }} {% trans "products." %}
-                            {% endwith %}
+                        {% with total=results.summary.total success=results.summary.success
+                        products=results.summary.products_updated|length %}
+                        {% trans "Successfully processed" %} {{ success }} {% trans "of" %} {{ total }} {% trans
+                        "files." %}
+                        {% trans "Updated" %} {{ products }} {% trans "products." %}
+                        {% endwith %}
                     </div>
 
                     {% if results.processed %}
@@ -114,19 +125,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    function updateFileList(input) {
+        const fileList = document.getElementById('fileList');
+        const uploadButton = document.getElementById('uploadButton');
+        const listGroup = fileList.querySelector('.list-group');
+
+        if (input.files.length) {
+            listGroup.innerHTML = [...input.files]
+                .map(file => `<li class="list-group-item small">${file.name}</li>`)
+                .join('');
+            fileList.classList.remove('d-none');
+            uploadButton.disabled = false;
+        } else {
+            fileList.classList.add('d-none');
+            uploadButton.disabled = true;
+        }
+    }
+</script>
+
 <style>
     .upload-area {
-      cursor: pointer;
-      min-height: 160px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+        cursor: pointer;
+        min-height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-    
-    .upload-area:hover {
-      background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
-      border-color: var(--bs-primary) !important;
-    }
-    </style>
 
+    .upload-area:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
+        border-color: var(--bs-primary) !important;
+    }
+</style>
 {% endblock content %}
