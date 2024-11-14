@@ -47,51 +47,32 @@
 
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="h5 mb-3">{% trans "Select Images to Upload" %}</h2>
-                    {% csrf_token %}
-
-                    <!-- Upload Area -->
-                    <div class="upload-area border border-2 border-dashed rounded p-4 text-center bg-light mb-3"
-                        ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)"
-                        ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
-
-                        <!-- Desktop Message -->
-                        <div class="d-none d-md-block">
-                            <i class="bi bi-cloud-upload fs-3 mb-2"></i>
-                            <p class="mb-1">{% trans "Drag and drop your images here" %}</p>
-                            <p class="text-secondary small mb-0">{% trans "or click to browse files" %}</p>
-                        </div>
-
-                        <!-- Mobile Message -->
-                        <div class="d-md-none">
-                            <i class="bi bi-camera fs-3 mb-2"></i>
-                            <p class="mb-0">{% trans "Tap to take photos or select from gallery" %}</p>
-                        </div>
-
-                        <!-- Hidden File Input -->
-                        <input type="file" class="file-input opacity-0 position-absolute top-0 start-0 w-100 h-100"
-                            accept="image/*" multiple capture="environment">
+                  <h2 class="h5 mb-3">{% trans "Select Images to Upload" %}</h2>
+                  {% csrf_token %}
+                  
+                  <label class="upload-area border border-2 border-dashed rounded p-4 text-center bg-light mb-3">
+                    <!-- Desktop Message -->
+                    <div class="d-none d-md-block">
+                      <i class="bi bi-cloud-upload fs-3 mb-2"></i>
+                      <p class="mb-0">{% trans "Click to browse files" %}</p>
                     </div>
-
-                    <!-- File List -->
-                    <div id="file-list" class="d-none">
-                        <h3 class="h6 text-secondary mb-2">{% trans "Selected Files" %}:</h3>
-                        <div class="row row-cols-2 row-cols-md-3 g-3 mb-3" id="preview-grid"></div>
-
-                        <!-- Upload Button -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-outline-secondary" onclick="clearFiles()">
-                                {% trans "Clear All" %}
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="uploadFiles()">
-                                <i class="bi bi-cloud-upload me-1"></i>
-                                {% trans "Upload Images" %}
-                            </button>
-                        </div>
+                    
+                    <!-- Mobile Message -->
+                    <div class="d-md-none">
+                      <i class="bi bi-camera fs-3 mb-2"></i>
+                      <p class="mb-0">{% trans "Tap to take photos or select from gallery" %}</p>
                     </div>
+                    
+                    <input type="file" class="d-none" accept="image/*" multiple capture="environment">
+                  </label>
+              
+                  <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-cloud-upload me-1"></i>
+                    {% trans "Upload Images" %}
+                  </button>
                 </div>
-            </div>
-
+              </div>
+              
 
             {% if results %}
             <div class="card">
@@ -133,114 +114,19 @@
         </div>
     </div>
 </div>
-
-<script>
-    const uploadArea = document.querySelector('.upload-area');
-    const fileInput = document.querySelector('.file-input');
-    const fileList = document.querySelector('#file-list');
-    const previewGrid = document.querySelector('#preview-grid');
-    let selectedFiles = [];
-
-    // Click handler for upload area
-    uploadArea.addEventListener('click', () => fileInput.click());
-
-    // File input change handler
-    fileInput.addEventListener('change', handleFileSelect);
-
-    function handleDragEnter(e) {
-        e.preventDefault();
-        uploadArea.classList.add('border-primary');
-    }
-
-    function handleDragLeave(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-primary');
-    }
-
-    function handleDragOver(e) {
-        e.preventDefault();
-    }
-
-    function handleDrop(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-primary');
-
-        const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
-        if (files.length) {
-            addFiles(files);
-        }
-    }
-
-    function handleFileSelect(e) {
-        const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
-        if (files.length) {
-            addFiles(files);
-        }
-    }
-
-    function addFiles(files) {
-        selectedFiles.push(...files);
-        updateFileList();
-    }
-
-    function updateFileList() {
-        if (selectedFiles.length) {
-            fileList.classList.remove('d-none');
-            previewGrid.innerHTML = selectedFiles.map((file, i) => `
-          <div class="col">
-            <div class="card h-100">
-              <img src="${URL.createObjectURL(file)}" class="card-img-top" style="height: 120px; object-fit: cover;">
-              <div class="card-body p-2">
-                <p class="small text-truncate mb-0">${file.name}</p>
-              </div>
-              <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 p-0 rounded-circle" 
-                      style="width: 24px; height: 24px;"
-                      onclick="removeFile(${i})">
-                <i class="bi bi-x"></i>
-              </button>
-            </div>
-          </div>
-        `).join('');
-        } else {
-            fileList.classList.add('d-none');
-            previewGrid.innerHTML = '';
-        }
-    }
-
-    function removeFile(index) {
-        selectedFiles.splice(index, 1);
-        updateFileList();
-    }
-
-    function clearFiles() {
-        selectedFiles = [];
-        fileInput.value = '';
-        updateFileList();
-    }
-
-    function uploadFiles() {
-        // Implement file upload logic here
-        console.log('Uploading files:', selectedFiles);
-    }
-</script>
-
 <style>
     .upload-area {
-        cursor: pointer;
-        min-height: 160px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
+      cursor: pointer;
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-
+    
     .upload-area:hover {
-        background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
-        border-color: var(--bs-primary) !important;
+      background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
+      border-color: var(--bs-primary) !important;
     }
+    </style>
 
-    .file-input {
-        cursor: pointer;
-    }
-</style>
 {% endblock content %}
