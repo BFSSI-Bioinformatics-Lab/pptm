@@ -178,14 +178,21 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Get fresh count of pending records
         context['pending_files'] = self.get_pending_records()
         
         if 'upload_results' in self.request.session:
-            context['results'] = self.request.session.pop('upload_results')
+            # Convert any lazy translation objects to strings
+            results = self.request.session.pop('upload_results')
+            
+            # Process error messages
+            for error in results.get('errors', []):
+                if 'error' in error:
+                    error['error'] = str(error['error'])
+            
+            context['results'] = results
         
         return context
-
+    
     def post(self, request, *args, **kwargs):
         """Handle file upload and processing."""
         if not request.FILES:
@@ -260,7 +267,7 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 'total': len(files),
                 'success': 0,
                 'failed': 0,
-                'products_updated': set()
+                'products_updated': []
             }
         }
 
@@ -319,6 +326,12 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
             results['summary']['failed'] += 1
 
         results['summary']['products_updated'] = list(results['summary']['products_updated'])
+                
+        # Convert any lazy translation objects to strings
+        for error in results['errors']:
+            if 'error' in error:
+                error['error'] = str(error['error'])
+        
         return results
 
 class ProductSubmissionStartView(BaseProductStepView, CreateView):
