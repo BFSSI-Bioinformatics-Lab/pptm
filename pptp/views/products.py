@@ -133,28 +133,125 @@ class TogglePhotoQueueMode(BaseProductView, View):
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.db import transaction
+from django.utils.translation import gettext_lazy as _
+from django.http import JsonResponse
+
+
 class BulkUploadView(LoginRequiredMixin, TemplateView):
-    """Handle bulk image upload"""
+    """
+    Handle bulk image upload for offline mode products.
+    Matches uploaded files with pending records and updates them.
+    """
     template_name = 'pptp/products/bulk_upload.html'
+
+    def get_pending_records(self):
+        """Get all pending records that need file uploads."""
+        pending_files = []
+        models_to_check = [
+            (Barcode, 'Barcode'),
+            (NutritionFacts, 'Nutrition Facts'),
+            (Ingredients, 'Ingredients'),
+            (ProductImage, 'Product Image')
+        ]
+        
+        for model, type_name in models_to_check:
+            records = model.objects.filter(
+                product__created_by=self.request.user,
+                product__is_offline=True,
+                is_uploaded=False
+            ).select_related('product')
+            
+            for record in records:
+                pending_files.append({
+                    'filename': record.device_filename,
+                    'type': type_name,
+                    'product': record.product.product_name,
+                    'id': record.id,
+                    'model': model.__name__
+                })
+        
+        return pending_files
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if 'results' in self.request.session:
-            context['results'] = self.request.session.pop('results')
+        context['pending_files'] = self.get_pending_records()
+        
+        if 'upload_results' in self.request.session:
+            context['results'] = self.request.session.pop('upload_results')
+        
         return context
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
+        """Handle file upload and processing."""
+        if not request.FILES:
+            messages.error(request, _("No files were uploaded"))
+            return redirect('products:bulk_upload')
+
         try:
             files = request.FILES.getlist('files')
+            if not files:
+                messages.error(request, _("No files were selected"))
+                return redirect('products:bulk_upload')
+
             results = self.process_files(files)
-            messages.success(request, _("Files processed successfully"))
-            request.session['results'] = results
+            
+            # Add summary messages
+            if results['summary']['success'] > 0:
+                messages.success(
+                    request,
+                    _("Successfully processed %(count)d files") % 
+                    {'count': results['summary']['success']}
+                )
+            
+            if results['summary']['failed'] > 0:
+                messages.warning(
+                    request,
+                    _("Failed to process %(count)d files") % 
+                    {'count': results['summary']['failed']}
+                )
+
+            request.session['upload_results'] = results
+            
         except Exception as e:
-            messages.error(request, str(e))
-        return redirect('products:bulk_upload')
+            messages.error(request, _("Error processing files: %s") % str(e))
         
+        return redirect('products:bulk_upload')
+
+    def get_image_field_name(self, record):
+        """Get the correct image field name based on record type."""
+        if isinstance(record, Barcode):
+            return 'barcode_image'
+        return 'image'
+
+    def check_product_completion(self, product):
+        """Check if all required files for a product have been uploaded."""
+        pending_uploads = any([
+            product.barcodes.filter(is_uploaded=False).exists(),
+            product.nutrition_facts.filter(is_uploaded=False).exists(),
+            product.ingredients.filter(is_uploaded=False).exists(),
+            product.product_images.filter(is_uploaded=False).exists()
+        ])
+        
+        if not pending_uploads:
+            product.is_offline = False
+            product.save()
+            
+            messages.success(
+                self.request,
+                _("All files uploaded for product: %s") % product.product_name
+            )
+
     @transaction.atomic
     def process_files(self, files):
+        """
+        Process uploaded files and match them with pending records.
+        Returns dict with processing results.
+        """
         results = {
             'processed': [],
             'errors': [],
@@ -165,13 +262,13 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 'products_updated': set()
             }
         }
-        
-        # Create lookup of filenames
+
+        # Create filename lookup
         filename_map = {f.name: f for f in files}
         
-        # Find all pending records that match any of these filenames
-        pending_records = []
+        # Get all relevant pending records in a single query
         models_to_check = [Barcode, NutritionFacts, Ingredients, ProductImage]
+        pending_records = []
         
         for model in models_to_check:
             records = model.objects.filter(
@@ -181,21 +278,23 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 device_filename__in=filename_map.keys()
             ).select_related('product')
             pending_records.extend(records)
-        
-        # Process each pending record
+
+        # Track processed filenames
+        processed_filenames = set()
+
+        # Process records
         for record in pending_records:
             try:
-                # Get the matching file
                 file = filename_map.get(record.device_filename)
                 if not file:
                     continue
-                
-                # Update the record with the actual file
+
                 field_name = self.get_image_field_name(record)
                 setattr(record, field_name, file)
                 record.is_uploaded = True
                 record.save()
-                
+
+                processed_filenames.add(record.device_filename)
                 results['processed'].append({
                     'filename': record.device_filename,
                     'product': record.product.product_name,
@@ -203,31 +302,29 @@ class BulkUploadView(LoginRequiredMixin, TemplateView):
                 })
                 results['summary']['success'] += 1
                 results['summary']['products_updated'].add(record.product.id)
-                
-                # Check if product is complete
+
                 self.check_product_completion(record.product)
-                
+
             except Exception as e:
                 results['errors'].append({
                     'filename': record.device_filename,
                     'error': str(e)
                 })
                 results['summary']['failed'] += 1
-        
-        # Note files that didn't match any records
-        matched_filenames = {r.device_filename for r in pending_records}
-        unmatched_files = set(filename_map.keys()) - matched_filenames
-        
+
+        # Handle unmatched files
+        unmatched_files = set(filename_map.keys()) - processed_filenames
         for filename in unmatched_files:
             results['errors'].append({
                 'filename': filename,
-                'error': 'No matching pending upload found for this file'
+                'error': _('No matching pending upload found for this file')
             })
             results['summary']['failed'] += 1
-        
-        results['summary']['products_updated'] = list(results['summary']['products_updated'])
-        return results  
 
+        # Convert set to list for serialization
+        results['summary']['products_updated'] = list(results['summary']['products_updated'])
+        return results
+    
     def get_image_field_name(self, record):
         """Get the correct image field name based on record type"""
         if isinstance(record, Barcode):
