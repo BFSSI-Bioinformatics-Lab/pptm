@@ -9,8 +9,6 @@ services:
     volumes:
       - .:/app
       - media_volume:/app/pptp/media
-    ports:
-      - "8000:8000"
     environment:
       - DATABASE_URL=postgres://kate@db:5432/pptp
       - DJANGO_SETTINGS_MODULE=config.settings.local
