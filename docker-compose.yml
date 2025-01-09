@@ -1,29 +1,13 @@
 version: '3.8'
-
 services:
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     ports:
-      - "172.17.10.117:8000:8000"
+      - "8000:8000"
     volumes:
       - .:/app
       - media_volume:/app/pptp/media
     environment:
-      - DATABASE_URL=postgres://kate@db:5432/pptp
+      - DATABASE_URL=${DATABASE_URL}
       - DJANGO_SETTINGS_MODULE=config.settings.local
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=pptp
-      - POSTGRES_USER=kate
-      - POSTGRES_HOST_AUTH_METHOD=trust
-
-volumes:
-  postgres_data:
-  media_volume:
