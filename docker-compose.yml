@@ -11,3 +11,6 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - DJANGO_SETTINGS_MODULE=config.settings.local
+
+volumes:
+  media_volume:
