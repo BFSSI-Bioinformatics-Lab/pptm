@@ -124,7 +124,7 @@ class NutritionFactsUploadTests(ProductUploadTestCase):
         )
         Barcode.objects.create(
             product=self.product,
-            barcode_image=barcode_image,
+            image=barcode_image,
             barcode_number='123456789'
         )
 
@@ -217,7 +217,7 @@ class ProductImagesUploadTests(ProductUploadTestCase):
         )
         Barcode.objects.create(
             product=self.product,
-            barcode_image=barcode_image,
+            image=barcode_image,
             barcode_number='123456789'
         )
         
