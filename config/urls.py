@@ -63,4 +63,9 @@ if settings.DEBUG:
 
         raw_urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + raw_urlpatterns
 
-urlpatterns = prefix_url_patterns(raw_urlpatterns)
+if URL_PREFIX:
+    urlpatterns = [
+        path(f'{URL_PREFIX}/', include(raw_urlpatterns))
+    ]
+else:
+    urlpatterns = raw_urlpatterns
