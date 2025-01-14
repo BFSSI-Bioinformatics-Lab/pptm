@@ -13,7 +13,7 @@ from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
 
 
-class BaseProductView(LoginRequiredMixin):
+class BaseProductView():
     """Base class for all product-related views"""
     
     def get_pending_upload_count(self):
@@ -144,7 +144,7 @@ class TogglePhotoQueueMode(BaseProductView, View):
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
-class BulkUploadView(LoginRequiredMixin, TemplateView):
+class BulkUploadView(TemplateView):
     """Handle bulk image upload for offline mode products."""
     template_name = 'pptp/products/bulk_upload.html'
 
