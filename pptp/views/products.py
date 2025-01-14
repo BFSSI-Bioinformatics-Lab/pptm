@@ -18,7 +18,7 @@ class BaseProductView():
     
     def get_pending_upload_count(self):
         """Get total number of pending uploads for the user"""
-        user = self.request.user
+        user = None # self.request.user
         return sum([
             Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
             NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
