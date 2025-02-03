@@ -264,8 +264,7 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
-REDIS_URL = env("REDIS_URL", default="redis:CSRF_TRUSTED_ORIGINS = ["http://fsdh-proj-plpp-webapp-prd.azurewebsites.net"]
-
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
 # django-allauth
 # ------------------------------------------------------------------------------
@@ -295,6 +294,7 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 CSRF_TRUSTED_ORIGINS = [
     "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
 ]
+
 CORS_ALLOWED_ORIGINS = [
     "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
 ]
