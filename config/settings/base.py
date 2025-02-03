@@ -291,6 +291,8 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+CORS_ORIGIN_ALLOW_ALL = True
+
 CSRF_TRUSTED_ORIGINS = [
     "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
 ]
