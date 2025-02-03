@@ -3,7 +3,6 @@ import os
 import uuid
 from django.views.generic import View, CreateView, UpdateView, TemplateView
 from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.db import transaction
@@ -13,7 +12,7 @@ from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
 
 
-class BaseProductView(LoginRequiredMixin):
+class BaseProductView():
     """Base class for all product-related views"""
     
     def get_pending_upload_count(self):
@@ -144,7 +143,7 @@ class TogglePhotoQueueMode(BaseProductView, View):
         return redirect(request.META.get('HTTP_REFERER', 'products:dashboard'))
 
 
-class BulkUploadView(LoginRequiredMixin, TemplateView):
+class BulkUploadView(TemplateView):
     """Handle bulk image upload for offline mode products."""
     template_name = 'pptp/products/bulk_upload.html'
 
