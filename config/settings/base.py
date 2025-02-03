@@ -83,6 +83,7 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.mfa",
     "allauth.socialaccount",
+    "corsheaders"
 ]
 
 LOCAL_APPS = [
@@ -145,6 +146,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 # STATIC
@@ -262,7 +264,7 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["console"]},
 }
 
-REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+REDIS_URL = env("REDIS_URL", default="redis:CSRF_TRUSTED_ORIGINS = ["http://fsdh-proj-plpp-webapp-prd.azurewebsites.net"]
 
 
 # django-allauth
@@ -290,3 +292,9 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+]
+CORS_ALLOWED_ORIGINS = [
+    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+]
