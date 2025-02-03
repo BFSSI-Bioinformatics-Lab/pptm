@@ -11,11 +11,11 @@ class Product(models.Model):
     """
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        'users.User',
-        on_delete=models.SET_NULL,
+    created_by = models.CharField(
+        max_length=255,
+        blank=True,
         null=True,
-        related_name='submitted_products'
+        help_text=_("Username from request headers")
     )
     submission_complete = models.BooleanField(default=False)
 

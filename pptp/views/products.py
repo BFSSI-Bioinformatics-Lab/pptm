@@ -14,10 +14,11 @@ from ..forms.products import ProductSetupForm
 
 class BaseProductView():
     """Base class for all product-related views"""
-    
+    def get_user_from_headers(self):
+        return self.request.headers.get('Dh-User')
+
     def get_pending_upload_count(self):
-        """Get total number of pending uploads for the user"""
-        user = self.request.user
+        user = self.get_user_from_headers()
         return sum([
             Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
             NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
@@ -159,7 +160,7 @@ class BulkUploadView(TemplateView):
         
         for model, type_name in models_to_check:
             records = model.objects.filter(
-                product__created_by=self.request.user,
+                product__created_by=self.get_user_from_headers(),
                 product__is_offline=True,
                 is_uploaded=False
             ).select_related('product')
@@ -275,7 +276,7 @@ class BulkUploadView(TemplateView):
         
         for model in models_to_check:
             records = model.objects.select_related('product').filter(
-                product__created_by=self.request.user,
+                product__created_by=self.get_user_from_headers(),
                 product__is_offline=True,
                 is_uploaded=False,
                 device_filename__in=filename_map.keys()
@@ -322,7 +323,8 @@ class BulkUploadView(TemplateView):
 
         results['summary']['products_updated'] = list(results['summary']['products_updated'])
         return results
-    
+
+
 class ProductSubmissionStartView(BaseProductStepView, CreateView):
     model = Product
     fields = []
@@ -330,7 +332,7 @@ class ProductSubmissionStartView(BaseProductStepView, CreateView):
     view_step = -1
     
     def form_valid(self, form):
-        form.instance.created_by = self.request.user
+        form.instance.created_by = self.get_user_from_headers()
         # Set offline mode based on session setting
         form.instance.is_offline = self.request.session.get('photo_queue_mode', False)
         return super().form_valid(form)
