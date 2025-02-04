@@ -9,7 +9,6 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 CORS_URLS_REGEX = r".*"
-CORS_REPLACE_HTTPS_REFERER = True
 CORS_ORIGIN_SHOW_ERROR = True
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
