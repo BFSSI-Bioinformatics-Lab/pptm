@@ -18,7 +18,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_USE_SESSIONS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CSRF_TRUSTED_ORIGINS = [
-    "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
 ]
 CORS_ALLOWED_ORIGINS = [
     "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
