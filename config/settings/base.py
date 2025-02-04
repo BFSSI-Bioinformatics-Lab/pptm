@@ -12,6 +12,17 @@ CORS_URLS_REGEX = r".*"
 CORS_ORIGIN_SHOW_ERROR = True
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_DOMAIN = 'fsdh-proj-plpp-webapp-prd.azurewebsites.net'
+CORS_ORIGIN_ALLOW_ALL = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+]
+CORS_ALLOWED_ORIGINS = [
+    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+]
+print("CORS_ALLOWED_ORIGINS:", CORS_ALLOWED_ORIGINS)
+print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)
+
+
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # pptp/
@@ -155,6 +166,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "pptp.middleware.CSRFDebugMiddleware",
 ]
 
 # STATIC
@@ -299,15 +311,3 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 
 # Your stuff...
 # ------------------------------------------------------------------------------
-CORS_ORIGIN_ALLOW_ALL = True
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
-]
-
-CORS_ALLOWED_ORIGINS = [
-    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
-]
-
-print("CORS_ALLOWED_ORIGINS:", CORS_ALLOWED_ORIGINS)
-print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)
