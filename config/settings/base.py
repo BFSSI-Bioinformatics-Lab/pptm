@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 CORS_URLS_REGEX = r".*"
 CORS_ORIGIN_SHOW_ERROR = True
 CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_DOMAIN = 'fsdh-proj-plpp-webapp-prd.azurewebsites.net'
+CSRF_COOKIE_DOMAIN = '.fsdh-proj-plpp-webapp-prd.azurewebsites.net'
 CORS_ORIGIN_ALLOW_ALL = True
 CSRF_TRUSTED_ORIGINS = [
     "http://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
