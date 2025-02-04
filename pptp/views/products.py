@@ -12,6 +12,17 @@ from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm
 
 
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TestCorsView(View):
+    def get(self, request, *args, **kwargs):
+        response = JsonResponse({'status': 'ok', 'message': 'CORS test successful'})
+        print("Request headers:", dict(request.headers))
+        return response
+
+
 class BaseProductView():
     """Base class for all product-related views"""
     def get_user_from_headers(self):

@@ -5,6 +5,13 @@ from pathlib import Path
 
 import environ
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+CORS_URLS_REGEX = r".*"
+CORS_REPLACE_HTTPS_REFERER = True
+CORS_ORIGIN_SHOW_ERROR = True
+
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # pptp/
 APPS_DIR = BASE_DIR / "pptp"
@@ -300,3 +307,6 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
 ]
+
+print("CORS_ALLOWED_ORIGINS:", CORS_ALLOWED_ORIGINS)
+print("CSRF_TRUSTED_ORIGINS:", CSRF_TRUSTED_ORIGINS)

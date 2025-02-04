@@ -9,7 +9,8 @@ from ..views.products import (
     NutritionFactsUploadView,
     ProductImagesUploadView,
     ProductReviewView,
-    BulkUploadView
+    BulkUploadView,
+    TestCorsView
 )
 
 app_name = 'products'
@@ -25,4 +26,5 @@ urlpatterns = [
     path('<int:pk>/nft/', NutritionFactsUploadView.as_view(), name='nutrition_facts_upload'),
     path('<int:pk>/product_images/', ProductImagesUploadView.as_view(), name='product_images_upload'),
     path('<int:pk>/review/', ProductReviewView.as_view(), name='review'),
+    path('test-cors/', TestCorsView.as_view(), name='test_cors'),
 ]
