@@ -1,8 +1,15 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
+from ..storage.azure import AzureBlobStorage
 
-User = get_user_model()
+
+User = get_user_model() # TODO: fix this to be the datahub user
+
+
+def get_upload_path(instance, filename):
+    model_name = instance.__class__.__name__.lower()
+    return f"{model_name}/{filename}"
 
 
 class Product(models.Model):
@@ -70,22 +77,18 @@ class Product(models.Model):
 
 
 class BaseImageModel(models.Model):
-    """
-    Abstract base class for all image-related models
-    """
     created_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(
         blank=True,
         help_text=_("Any additional notes")
     )
     image = models.ImageField(
-        upload_to='images/',  # Will be overridden in child classes
+        upload_to=get_upload_path,
         help_text=_("Image file"),
+        storage=AzureBlobStorage(),
         null=True,
         blank=True
     )
-    
-    # Offline mode fields
     device_filename = models.CharField(
         max_length=255,
         blank=True,

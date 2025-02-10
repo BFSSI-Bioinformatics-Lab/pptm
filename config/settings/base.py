@@ -4,6 +4,7 @@
 from pathlib import Path
 
 import environ
+import os
 
 CSRF_TRUSTED_ORIGINS = [
     "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
@@ -300,3 +301,7 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+# Azure Storage Settings
+AZURE_ACCOUNT_URL = os.environ.get('AZURE_ACCOUNT_URL')
+AZURE_SAS_TOKEN = os.environ.get('AZURE_SAS_TOKEN')
+AZURE_CONTAINER = os.environ.get('AZURE_CONTAINER', 'media')
