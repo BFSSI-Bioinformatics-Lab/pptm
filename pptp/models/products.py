@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
-from ..storage.azure import AzureBlobStorage
+from django.core.exceptions import ValidationError
+from ..storage.azure import AzureBlobStorage, AzureBlobStorageError
 
 
 User = get_user_model() # TODO: fix this to be the datahub user
@@ -75,6 +76,18 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.product_name} (Product {self.id})"
 
+class AzureImageField(models.ImageField):
+    def save_form_data(self, instance, data):
+        try:
+            super().save_form_data(instance, data)
+        except AzureBlobStorageError as e:
+            if getattr(instance, 'product', None) and instance.product.is_offline:
+                instance.device_filename = data.name if data else None
+                instance.is_uploaded = False
+                instance.image = None
+            else:
+                raise ValidationError(_("Unable to save image: Azure storage error - {}").format(str(e)))
+
 
 class BaseImageModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -82,7 +95,7 @@ class BaseImageModel(models.Model):
         blank=True,
         help_text=_("Any additional notes")
     )
-    image = models.ImageField(
+    image = AzureImageField(
         upload_to=get_upload_path,
         help_text=_("Image file"),
         storage=AzureBlobStorage(),
