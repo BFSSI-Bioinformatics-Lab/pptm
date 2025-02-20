@@ -29,14 +29,6 @@
                             </div>
                         {% endfor %}
                     {% endif %}
-
-                    {% if photo_queue_mode %}
-                        <div class="alert alert-primary mb-4">
-                            <h4 class="alert-heading">{% trans "Photo Queue Mode Active" %}</h4>
-                            <p class="mb-0">{% trans "Images will be saved locally and can be uploaded later." %}</p>
-                        </div>
-                    {% endif %}
-                    
                     {# Display existing images #}
                     {% if product %}
                         <div class="mb-4">

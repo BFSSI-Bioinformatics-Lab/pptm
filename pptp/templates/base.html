@@ -51,21 +51,6 @@
                 <a href="{% url 'products:dashboard' %}" class="navbar-brand text-decoration-none">
                   <span class="fs-5 fw-bold text-dark">Product Photos</span>
                 </a>
-                {% if user.is_authenticated %}
-                  <form method="post" action="{% url 'products:toggle_photo_queue' %}" class="d-inline-block">
-                    {% csrf_token %}
-                    <button type="submit" class="btn {% if request.session.photo_queue_mode %}btn-success{% else %}btn-outline-secondary{% endif %} btn-sm rounded-pill">
-                      <i class="bi bi-camera-fill me-1"></i>
-                      Queue Mode {% if request.session.photo_queue_mode %}ON{% else %}OFF{% endif %}
-                    </button>
-                  </form>
-                  {% if pending_upload_count > 0 %}
-                    <a href="{% url 'products:bulk_upload' %}" class="btn btn-warning btn-sm rounded-pill">
-                      <i class="bi bi-cloud-upload me-1"></i>
-                      {{ pending_upload_count }} Pending
-                    </a>
-                  {% endif %}
-                {% endif %}
               </div>
               {% if user.is_authenticated %}
                 <div class="d-flex align-items-center gap-2">

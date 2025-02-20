@@ -8,41 +8,6 @@
     <div class="text-center">
         <h1 class="display-5 fw-bold">{% trans "Product Photo Collection" %}</h1>
     </div>
-
-    {# Photo Queue Mode Card #}
-    <div class="card">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h2 class="h4 card-title">{% trans "Upload Mode" %}</h2>
-                    <p class="card-text text-secondary">
-                        {% if photo_queue_mode %}
-                        {% trans "Photo Queue Mode is ON" %}
-                        {% if pending_upload_count %}
-                        <span class="ms-2 badge bg-primary rounded-pill">
-                            {{ pending_upload_count }} pending
-                        </span>
-                        {% endif %}
-                        {% else %}
-                        {% trans "Photo Queue Mode is OFF" %}
-                        {% endif %}
-                    </p>
-                </div>
-                <form method="post" action="{% url 'products:toggle_photo_queue' %}">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="btn {% if photo_queue_mode %}btn-danger{% else %}btn-primary{% endif %}">
-                        {% if photo_queue_mode %}
-                        {% trans "Switch to Online Mode" %}
-                        {% else %}
-                        {% trans "Switch to Photo Queue Mode" %}
-                        {% endif %}
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     {# New Submission Card #}
     <div class="card">
         <div class="card-body">
@@ -56,23 +21,5 @@
             </a>
         </div>
     </div>
-
-    {# Pending Uploads Card #}
-    {% if pending_upload_count %}
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h4 card-title mb-3">{% trans "Pending Uploads" %}</h2>
-            <p class="card-text text-secondary mb-4">
-                {% blocktrans with count=pending_upload_count %}
-                You have {{ count }} photos waiting to be uploaded. Upload them now if you have a good connection.
-                {% endblocktrans %}
-            </p>
-            <a href="{% url 'products:bulk_upload' %}"
-               class="btn btn-primary w-100">
-                {% trans "Upload Pending Photos" %}
-            </a>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
