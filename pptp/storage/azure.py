@@ -1,28 +1,46 @@
 from django.conf import settings
 from django.core.files.storage import Storage
 from azure.storage.blob import BlobServiceClient
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import (
+    ResourceNotFoundError,
+    ClientAuthenticationError,
+    AzureError
+)
 import os
 from urllib.parse import urljoin
+from django.core.exceptions import SuspiciousOperation
+
+
+class AzureBlobStorageError(Exception):
+    pass
 
 
 class AzureBlobStorage(Storage):
     def __init__(self):
-        self.account_url = settings.AZURE_ACCOUNT_URL
-        self.sas_token = settings.AZURE_SAS_TOKEN
-        self.container = settings.AZURE_CONTAINER
-        
-        self.client = BlobServiceClient(
-            account_url=self.account_url,
-            credential=self.sas_token
-        )
-        self.container_client = self.client.get_container_client(self.container)
+        try:
+            self.account_url = settings.AZURE_ACCOUNT_URL
+            self.sas_token = settings.AZURE_SAS_TOKEN
+            self.container = settings.AZURE_CONTAINER
+            self.client = BlobServiceClient(
+                account_url=self.account_url,
+                credential=self.sas_token
+            )
+            self.container_client = self.client.get_container_client(self.container)
+        except (AttributeError, ValueError) as e:
+            raise AzureBlobStorageError(f"Azure storage configuration error: {str(e)}")
+        except Exception as e:
+            raise AzureBlobStorageError(f"Failed to initialize Azure storage: {str(e)}")
 
     def _save(self, name, content):
-        blob_client = self.container_client.get_blob_client(name)
-        content.seek(0)
-        blob_client.upload_blob(content, overwrite=True)
-        return name
+        try:
+            blob_client = self.container_client.get_blob_client(name)
+            content.seek(0)
+            blob_client.upload_blob(content, overwrite=True)
+            return name
+        except ClientAuthenticationError:
+            raise AzureBlobStorageError("Azure authentication token has expired")
+        except AzureError as e:
+            raise AzureBlobStorageError(f"Failed to save file to Azure: {str(e)}")
 
     def _open(self, name, mode="rb"):
         try:
@@ -31,6 +49,10 @@ class AzureBlobStorage(Storage):
             return stream.readall()
         except ResourceNotFoundError:
             return None
+        except ClientAuthenticationError:
+            raise AzureBlobStorageError("Azure authentication token has expired")
+        except AzureError as e:
+            raise AzureBlobStorageError(f"Failed to open file from Azure: {str(e)}")
 
     def delete(self, name):
         try:
@@ -38,6 +60,10 @@ class AzureBlobStorage(Storage):
             blob_client.delete_blob()
         except ResourceNotFoundError:
             pass
+        except ClientAuthenticationError:
+            raise AzureBlobStorageError("Azure authentication token has expired")
+        except AzureError as e:
+            raise AzureBlobStorageError(f"Failed to delete file from Azure: {str(e)}")
 
     def exists(self, name):
         try:
@@ -46,23 +72,28 @@ class AzureBlobStorage(Storage):
             return True
         except ResourceNotFoundError:
             return False
+        except ClientAuthenticationError:
+            raise AzureBlobStorageError("Azure authentication token has expired")
+        except AzureError as e:
+            raise AzureBlobStorageError(f"Failed to check file existence in Azure: {str(e)}")
 
     def url(self, name):
-        #if settings.AZURE_CUSTOM_DOMAIN:
-        #   return urljoin(settings.AZURE_CUSTOM_DOMAIN, name)
-        return self.container_client.get_blob_client(name).url
+        try:
+            return self.container_client.get_blob_client(name).url
+        except ClientAuthenticationError:
+            raise AzureBlobStorageError("Azure authentication token has expired")
+        except AzureError as e:
+            raise AzureBlobStorageError(f"Failed to generate URL: {str(e)}")
 
     def get_valid_name(self, name):
         return name
 
     def get_available_name(self, name, max_length=None):
-        if self.exists(name):
-            dir_name, file_name = os.path.split(name)
-            file_root, file_ext = os.path.splitext(file_name)
-            count = 1
-            while self.exists(name):
-                name = os.path.join(
-                    dir_name, f"{file_root}_{count}{file_ext}"
-                )
-                count += 1
+        dir_name, file_name = os.path.split(name)
+        file_root, file_ext = os.path.splitext(file_name)
+        count = 1
+        
+        while self.exists(name):
+            name = os.path.join(dir_name, f"{file_root}_{count}{file_ext}")
+            count += 1
         return name
