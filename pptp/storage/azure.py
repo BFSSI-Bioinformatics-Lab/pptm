@@ -48,8 +48,8 @@ class AzureBlobStorage(Storage):
             return False
 
     def url(self, name):
-        if settings.AZURE_CUSTOM_DOMAIN:
-            return urljoin(settings.AZURE_CUSTOM_DOMAIN, name)
+        #if settings.AZURE_CUSTOM_DOMAIN:
+        #   return urljoin(settings.AZURE_CUSTOM_DOMAIN, name)
         return self.container_client.get_blob_client(name).url
 
     def get_valid_name(self, name):
