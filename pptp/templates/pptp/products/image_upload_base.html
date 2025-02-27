@@ -29,6 +29,14 @@
                             </div>
                         {% endfor %}
                     {% endif %}
+
+                    {% if photo_queue_mode %}
+                        <div class="alert alert-primary mb-4">
+                            <h4 class="alert-heading">{% trans "Photo Queue Mode Active" %}</h4>
+                            <p class="mb-0">{% trans "Images will be saved locally and can be uploaded later." %}</p>
+                        </div>
+                    {% endif %}
+                    
                     {# Display existing images #}
                     {% if product %}
                         <div class="mb-4">
@@ -84,7 +92,7 @@
                         </div>
                     {% endif %}
 
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
                         {% csrf_token %}
                         
                         <div class="mb-4">
@@ -93,11 +101,34 @@
                                     <label class="form-label fw-bold" for="{{ field.id_for_label }}">
                                         {{ field.label }}
                                     </label>
-                                    <div class="{% if field.field.widget_type == 'file' %}input-group{% endif %}">
+                                    
+                                    {% if field.field.widget_type == 'file' %}
+                                        <div class="drop-zone mb-3" id="dropZone">
+                                            <div class="drop-zone-prompt text-center p-4">
+                                                <div class="mb-2">
+                                                    <i class="bi bi-cloud-arrow-up fs-1"></i>
+                                                </div>
+                                                <p class="mb-2">{% trans "Drag and drop your image here" %}</p>
+                                                <p class="text-secondary small mb-3">{% trans "or" %}</p>
+                                                <label for="{{ field.id_for_label }}" class="btn btn-outline-primary mb-0">
+                                                    {% trans "Browse Files" %}
+                                                </label>
+                                            </div>
+                                            <div class="drop-zone-thumb d-none">
+                                                <span class="drop-zone-thumb-title"></span>
+                                                <button type="button" class="btn-close position-absolute top-0 end-0 m-2 bg-white"
+                                                        aria-label="Close" id="removeFile"></button>
+                                                <img src="" alt="" class="img-preview">
+                                            </div>
+                                        </div>
+                                        <div class="d-none">
+                                            {{ field }}
+                                        </div>
+                                    {% else %}
                                         {{ field }}
-                                    </div>
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
+                                        {% if field.help_text %}
+                                            <div class="form-text">{{ field.help_text }}</div>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -117,4 +148,163 @@
         </div>
     </div>
 </div>
+
+<style>
+    .drop-zone {
+        max-width: 100%;
+        height: 200px;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+        color: #444;
+        border: 2px dashed #0d6efd;
+        border-radius: 0.375rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .drop-zone--over {
+        border-style: solid;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .drop-zone-thumb {
+        width: 100%;
+        height: 100%;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .img-preview {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZoneElement = document.getElementById('dropZone');
+        const fileInput = document.querySelector('input[type="file"]');
+        
+        if (dropZoneElement && fileInput) {
+            // Preview when selecting file through input
+            fileInput.addEventListener('change', function(e) {
+                if (fileInput.files.length) {
+                    updateThumbnail(dropZoneElement, fileInput.files[0]);
+                }
+            });
+            
+            // Click on drop zone should trigger file input
+            dropZoneElement.addEventListener('click', function(e) {
+                if (e.target.id !== 'removeFile') {
+                    fileInput.click();
+                }
+            });
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZoneElement.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            // Highlight drop zone when dragging file over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZoneElement.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZoneElement.addEventListener(eventName, unhighlight, false);
+            });
+            
+            // Handle dropped files
+            dropZoneElement.addEventListener('drop', handleDrop, false);
+            
+            // Handle file removal
+            const removeButton = document.getElementById('removeFile');
+            if (removeButton) {
+                removeButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    fileInput.value = '';
+                    resetDropZone(dropZoneElement);
+                });
+            }
+        }
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function highlight() {
+            dropZoneElement.classList.add('drop-zone--over');
+        }
+        
+        function unhighlight() {
+            dropZoneElement.classList.remove('drop-zone--over');
+        }
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                fileInput.files = files;
+                updateThumbnail(dropZoneElement, files[0]);
+            }
+        }
+        
+        function updateThumbnail(dropZoneElement, file) {
+            // Show thumbnail container and hide prompt
+            let thumbnailElement = dropZoneElement.querySelector('.drop-zone-thumb');
+            let promptElement = dropZoneElement.querySelector('.drop-zone-prompt');
+            
+            thumbnailElement.classList.remove('d-none');
+            promptElement.classList.add('d-none');
+            
+            // Show file name
+            const titleElement = thumbnailElement.querySelector('.drop-zone-thumb-title');
+            if (titleElement) {
+                titleElement.textContent = file.name;
+            }
+            
+            // Show image preview if it's an image
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imgElement = thumbnailElement.querySelector('.img-preview');
+                    imgElement.src = e.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            } else {
+                // If not an image, display a generic thumbnail/icon
+                const imgElement = thumbnailElement.querySelector('.img-preview');
+                imgElement.src = '';
+                imgElement.style.display = 'none';
+            }
+        }
+        
+        function resetDropZone(dropZoneElement) {
+            let thumbnailElement = dropZoneElement.querySelector('.drop-zone-thumb');
+            let promptElement = dropZoneElement.querySelector('.drop-zone-prompt');
+            
+            thumbnailElement.classList.add('d-none');
+            promptElement.classList.remove('d-none');
+            
+            const imgElement = thumbnailElement.querySelector('.img-preview');
+            imgElement.src = '';
+        }
+    });
+</script>
 {% endblock content %}
