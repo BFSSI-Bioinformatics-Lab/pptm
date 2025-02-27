@@ -1,88 +1,33 @@
 {# templates/pptp/products/barcode_upload.html #}
-{% extends "pptp/products/base_submission.html" %}
+{% extends "pptp/products/image_upload_base.html" %}
 {% load i18n %}
 
-{% block submission_content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8">
-            <h1 class="h3 mb-4">{% trans "Upload Product Barcodes" %}</h1>
+{% block upload_title %}{% trans "Upload Product Barcodes" %}{% endblock %}
 
-            {% if needs_more_barcodes %}
-            <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-                <div class="d-flex">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>
-                        {% trans "You indicated this product has multiple barcodes. Please upload at least 2 barcodes." %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+{% block upload_icon %}upc-scan{% endblock %}
 
-            {% if barcodes %}
-            <div class="mb-4">
-                <h2 class="h5 mb-3">{% trans "Uploaded Barcodes" %}</h2>
-                <div class="row row-cols-1 row-cols-md-2 g-3">
-                    {% for barcode in barcodes %}
-                    <div class="col">
-                        <div class="card">
-                            <img src="{{ barcode.image.url }}" 
-                                 alt="Barcode" 
-                                 class="card-img-top">
-                            {% if barcode.barcode_number %}
-                            <div class="card-body py-2">
-                                <p class="card-text small text-secondary mb-0">
-                                    {{ barcode.barcode_number }}
-                                </p>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
+{% block drop_text %}{% trans "Drag and drop your barcode image here" %}{% endblock %}
 
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                
-                {% for field in form %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">
-                        {{ field.label }}
-                    </label>
-                    {% if field.field.widget_type == 'file' %}
-                    <div class="input-group">
-                        {{ field }}
-                    </div>
-                    {% else %}
-                    {{ field }}
-                    {% endif %}
-                    {% if field.help_text %}
-                    <div class="form-text">{{ field.help_text }}</div>
-                    {% endif %}
-                    {% if field.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ field.errors }}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button type="submit" 
-                            name="add_another" 
-                            class="btn btn-outline-secondary">
-                        {% trans "Add Another Barcode" %}
-                    </button>
-                    <button type="submit" 
-                            name="continue" 
-                            class="btn btn-primary">
-                        {% trans "Continue to Nutrition Facts" %}
-                    </button>
-                </div>
-            </form>
+{% block pre_image_content %}
+{% if needs_more_barcodes %}
+<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+    <div class="d-flex">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+            {% trans "You indicated this product has multiple barcodes. Please upload at least 2 barcodes." %}
         </div>
     </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block form_buttons %}
+<div class="d-flex justify-content-end gap-2 mt-4">
+    <button type="submit" name="add_another" class="btn btn-outline-secondary">
+        {% trans "Add Another Barcode" %}
+    </button>
+    <button type="submit" name="continue" class="btn btn-primary">
+        {% trans "Continue to Nutrition Facts" %}
+    </button>
 </div>
 {% endblock %}

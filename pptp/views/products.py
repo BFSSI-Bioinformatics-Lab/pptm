@@ -70,11 +70,18 @@ class BaseImageUploadView(BaseProductStepView, CreateView):
     template_name = 'pptp/products/image_upload_base.html'
     file_field_name = 'image'
     related_name = None
+    upload_title = None
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Set image_obj_list for the base template to use
         if self.related_name:
             context['image_obj_list'] = getattr(self.product, self.related_name).all()
+        
+        # Set upload title if provided
+        if self.upload_title:
+            context['upload_title'] = self.upload_title
+            
         return context
 
     def form_valid(self, form):
@@ -126,6 +133,18 @@ class BarcodeUploadView(BaseImageUploadView):
     fields = ['image', 'barcode_number']
     template_name = 'pptp/products/barcode_upload.html'
     related_name = 'barcodes'
+    upload_title = _("Upload Product Barcodes")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add info about whether more barcodes are needed
+        context['needs_more_barcodes'] = (
+            self.product.has_multiple_barcodes and 
+            self.product.barcodes.count() < 2
+        )
+        # Pass barcodes for backward compatibility with existing template
+        context['barcodes'] = context['image_obj_list']
+        return context
 
     def is_previous_step_complete(self):
         return bool(self.product.product_name)
@@ -163,7 +182,19 @@ class NutritionFactsUploadView(BaseImageUploadView):
     model = NutritionFacts
     fields = ['image', 'notes']
     template_name = 'pptp/products/nutrition_facts_upload.html'
-    realted_name = 'nutrition_facts'
+    related_name = 'nutrition_facts'  # Fix typo in "realted_name"
+    upload_title = _("Upload Nutrition Facts")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add info about whether more nutrition facts are needed
+        context['needs_more_nutrition_facts'] = (
+            self.product.has_multiple_nutrition_facts and 
+            self.product.nutrition_facts.count() < 2
+        )
+        # Pass nutrition_facts for backward compatibility with existing template
+        context['nutrition_facts'] = context['image_obj_list']
+        return context
 
     def is_previous_step_complete(self):
         return self.product.barcodes.exists()
@@ -202,6 +233,7 @@ class IngredientsUploadView(BaseImageUploadView):
     fields = ['image', 'notes']
     template_name = 'pptp/products/ingredients_upload.html'
     related_name = 'ingredients'
+    upload_title = _("Upload Ingredients")
 
     def is_previous_step_complete(self):
         return self.product.nutrition_facts.exists()
@@ -229,6 +261,14 @@ class ProductImagesUploadView(BaseImageUploadView):
     fields = ['image', 'image_type', 'notes']
     template_name = 'pptp/products/product_images_upload.html'
     related_name = 'product_images'
+    upload_title = _("Upload Product Images")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Keep backward compatibility with existing template
+        context['uploaded_images'] = [img for img in context['image_obj_list'] if img.is_uploaded]
+        context['pending_images'] = [img for img in context['image_obj_list'] if not img.is_uploaded]
+        return context
 
     def is_previous_step_complete(self):
         return self.product.ingredients.exists()

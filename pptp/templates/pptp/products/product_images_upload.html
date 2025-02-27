@@ -1,69 +1,20 @@
-{% extends "pptp/products/base_submission.html" %}
+{# templates/pptp/products/product_images_upload.html #}
+{% extends "pptp/products/image_upload_base.html" %}
 {% load i18n %}
 
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h2 class="h5 mb-3">{% trans "Uploaded Images" %}</h2>
-                    
-                    {% if uploaded_images %}
-                        <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
-                            {% for image in uploaded_images %}
-                                <div class="col">
-                                    <div class="card h-100">
-                                        <img src="{{ image.image.url }}" class="card-img-top" alt="Uploaded image">
-                                        <div class="card-body">
-                                            {% if image.notes %}
-                                                <p class="small text-secondary mb-0">{{ image.notes }}</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-secondary">{% trans "No images uploaded yet." %}</p>
-                    {% endif %}
+{% block upload_title %}{% trans "Upload Product Images" %}{% endblock %}
 
-                    {% if pending_images %}
-                        <h3 class="h6 mb-2">{% trans "Pending Uploads" %}</h3>
-                        <div class="list-group mb-3">
-                            {% for image in pending_images %}
-                                <div class="list-group-item">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-camera me-2"></i>
-                                        <div class="flex-grow-1">
-                                            {{ image.device_filename }}
-                                            {% if image.notes %}
-                                                <br>
-                                                <small class="text-secondary">{{ image.notes }}</small>
-                                            {% endif %}
-                                        </div>
-                                        <span class="badge bg-warning">{% trans "Pending" %}</span>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+{% block upload_icon %}camera{% endblock %}
 
-                    <form method="post" enctype="multipart/form-data" class="mb-3">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="submit" name="add_another" class="btn btn-outline-primary">
-                                {% trans "Add Another" %}
-                            </button>
-                            <button type="submit" name="continue" class="btn btn-primary">
-                                {% trans "Continue" %}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+{% block drop_text %}{% trans "Drag and drop your product image here" %}{% endblock %}
+
+{% block form_buttons %}
+<div class="d-flex justify-content-end gap-2">
+    <button type="submit" name="add_another" class="btn btn-outline-primary">
+        {% trans "Add Another" %}
+    </button>
+    <button type="submit" name="continue" class="btn btn-primary">
+        {% trans "Continue" %}
+    </button>
 </div>
 {% endblock %}
