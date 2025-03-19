@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.files.storage import Storage
+from django.utils.deconstruct import deconstructible
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import (
     ResourceNotFoundError,
@@ -15,6 +16,7 @@ class AzureBlobStorageError(Exception):
     pass
 
 
+@deconstructible
 class AzureBlobStorage(Storage):
     def __init__(self):
         try:
@@ -30,6 +32,15 @@ class AzureBlobStorage(Storage):
             raise AzureBlobStorageError(f"Azure storage configuration error: {str(e)}")
         except Exception as e:
             raise AzureBlobStorageError(f"Failed to initialize Azure storage: {str(e)}")
+
+    def __eq__(self, other):
+        if not isinstance(other, AzureBlobStorage):
+            return NotImplemented
+        return (
+            self.account_url == other.account_url and
+            self.sas_token == other.sas_token and
+            self.container == other.container
+        )
 
     def _save(self, name, content):
         try:

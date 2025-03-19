@@ -11,6 +11,8 @@ class ProductSetupForm(forms.ModelForm):
             'product_name',
             'is_supplemented_food',
             'is_variety_pack',
+            'is_individually_packaged',
+            'has_preparation_instructions',
             'has_front_of_pack_label',
             'has_multiple_nutrition_facts',
             'has_multiple_barcodes',
