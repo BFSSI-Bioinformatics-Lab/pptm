@@ -51,6 +51,14 @@ class Product(models.Model):
         default=False,
         help_text=_("Check if this is a Supplemented Food as indicated by the front-of-pack caution identifier and supplemented food facts table")
     )
+    is_individually_packaged = models.BooleanField(
+        default=False,
+        help_text=_("Check if this is multiple individually wrapped items, e.g. granola bars")
+    )
+    has_preparation_instructions = models.BooleanField(
+        default=False,
+        help_text=_("Check if this has preparation instructions on the package")
+    )
     has_front_of_pack_label = models.BooleanField(
         default=False,
         help_text=_("Check if this has a front of pack nutrition symbol")
@@ -75,6 +83,7 @@ class Product(models.Model):
     
     def __str__(self):
         return f"{self.product_name} (Product {self.id})"
+
 
 class AzureImageField(models.ImageField):
     def save_form_data(self, instance, data):
