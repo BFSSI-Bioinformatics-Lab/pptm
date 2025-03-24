@@ -7,7 +7,8 @@ from ..views.products import (
     IngredientsUploadView,
     NutritionFactsUploadView,
     ProductImagesUploadView,
-    ProductReviewView
+    ProductReviewView,
+    CombinedUploadView
 )
 
 app_name = 'products'
@@ -15,6 +16,7 @@ app_name = 'products'
 urlpatterns = [
     path('', ProductDashboardView.as_view(), name='dashboard'),
     path('submit/', ProductSubmissionStartView.as_view(), name='submission_start'),
+    path('submit/<int:pk>/upload/', CombinedUploadView.as_view(), name='combined_upload'),
     path('submit/<int:pk>/setup/', ProductSetupView.as_view(), name='setup'),
     path('submit/<int:pk>/barcode/', BarcodeUploadView.as_view(), name='barcode_upload'),
     path('<int:pk>/ingredients/', IngredientsUploadView.as_view(), name='ingredients_upload'),
