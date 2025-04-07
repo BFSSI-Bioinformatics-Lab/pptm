@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm, BarcodeUploadForm, NutritionFactsUploadForm, IngredientsUploadForm, ProductImageUploadForm
 
@@ -384,11 +385,26 @@ class ProductReviewView(BaseProductView, UpdateView):
 
 
 class CombinedUploadView(UpdateView):
-    """A single page that combines all the upload steps"""
+    """A single page that combines all the upload steps with enhanced drag-and-drop functionality"""
     model = Product
     template_name = 'pptp/products/combined_upload.html'
     form_class = ProductSetupForm
-    
+
+    def get_form(self, form_class=None):
+        """
+        Returns an instance of the form to be used in this view.
+        """
+        if form_class is None:
+            form_class = self.get_form_class()
+        
+        product = self.get_object()
+        
+        return form_class(
+            self.request.POST if self.request.method == "POST" else None, 
+            self.request.FILES if self.request.method == "POST" else None, 
+            instance=self.get_object()
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -420,15 +436,15 @@ class CombinedUploadView(UpdateView):
         return context
     
     def post(self, request, *args, **kwargs):
-        product = self.get_object()
+        self.object = self.get_object()  # Set self.object explicitly
         form = self.get_form()
         
-        # Process product setup form
         if form.is_valid():
-            form.save()
+            self.object = form.save()  # Update self.object with saved instance
         else:
             return self.form_invalid(form)
         
+        product = self.object
         # Process image uploads
         self.process_uploads(request, product)
         
@@ -455,14 +471,40 @@ class CombinedUploadView(UpdateView):
         """Process all file uploads from the form"""
         # Helper function to save an upload
         def save_upload(form_class, prefix, related_name):
-            form = form_class(request.POST, request.FILES, prefix=prefix)
-            if form.is_valid() and any(request.FILES.get(f'{prefix}-{field}') for field in form.fields if field != 'notes'):
-                instance = form.save(commit=False)
+            # Look for regular and indexed form fields
+            regular_form = None
+            indexed_forms = []
+            
+            # Check for regular upload
+            if any(request.FILES.get(f'{prefix}-{field}') for field in form_class().fields if field != 'notes'):
+                regular_form = form_class(request.POST, request.FILES, prefix=prefix)
+            
+            # Check for indexed uploads (for multiple files)
+            index = 0
+            while True:
+                prefix_idx = f'{prefix}-{index}'
+                if any(request.FILES.get(f'{prefix_idx}-{field}') for field in form_class().fields if field != 'notes'):
+                    indexed_forms.append(form_class(request.POST, request.FILES, prefix=prefix_idx))
+                    index += 1
+                else:
+                    break
+            
+            # Process regular form
+            if regular_form and regular_form.is_valid():
+                instance = regular_form.save(commit=False)
                 instance.product = product
                 instance.is_uploaded = True
                 instance.save()
-                return True
-            return False
+            
+            # Process indexed forms
+            for form in indexed_forms:
+                if form.is_valid():
+                    instance = form.save(commit=False)
+                    instance.product = product
+                    instance.is_uploaded = True
+                    instance.save()
+            
+            return bool(regular_form and regular_form.is_valid()) or any(form.is_valid() for form in indexed_forms)
         
         # Process each upload type
         upload_types = [
@@ -519,3 +561,67 @@ class CombinedUploadView(UpdateView):
             errors.append(_("Missing required product images: %s") % ", ".join(missing_types_display))
             
         return errors
+
+
+@require_POST
+def ajax_upload_image(request, pk):
+    """Handle AJAX image uploads from drag and drop functionality"""
+    if 'file' not in request.FILES:
+        return JsonResponse({'success': False, 'error': _("No file provided")})
+    
+    file_obj = request.FILES['file']
+    image_type = request.POST.get('image_type')
+    notes = request.POST.get('notes', '')
+    
+    if not image_type:
+        return JsonResponse({'success': False, 'error': _("No image type specified")})
+    
+    try:
+        product = Product.objects.get(pk=pk)
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': _("Product not found")})
+    
+    try:
+        # Create the appropriate type of image
+        if image_type == 'barcode':
+            barcode_number = request.POST.get('barcode_number', '')
+            image = Barcode.objects.create(
+                product=product,
+                image=file_obj,
+                barcode_number=barcode_number,
+                notes=notes,
+                is_uploaded=True
+            )
+        elif image_type == 'nutrition':
+            image = NutritionFacts.objects.create(
+                product=product,
+                image=file_obj,
+                notes=notes,
+                is_uploaded=True
+            )
+        elif image_type == 'ingredients':
+            image = Ingredients.objects.create(
+                product=product,
+                image=file_obj,
+                notes=notes,
+                is_uploaded=True
+            )
+        elif image_type in ['front', 'back', 'side', 'other']:
+            image = ProductImage.objects.create(
+                product=product,
+                image=file_obj,
+                image_type=image_type,
+                notes=notes,
+                is_uploaded=True
+            )
+        else:
+            return JsonResponse({'success': False, 'error': _("Invalid image type")})
+        
+        return JsonResponse({
+            'success': True,
+            'image_id': image.id,
+            'image_url': image.image.url
+        })
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
