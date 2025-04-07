@@ -354,15 +354,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const event = new Event('change', { bubbles: true });
         fileInput.dispatchEvent(event);
 
-        const card = fileInput.closest('.card');
-        if (card) {
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          card.classList.add('border-primary');
-          setTimeout(() => {
-            card.classList.remove('border-primary');
-          }, 1500);
-        }
-
         if (files.length > 1) {
           const remainingFiles = Array.from(files).slice(1);
           const newDataTransfer = new DataTransfer();
