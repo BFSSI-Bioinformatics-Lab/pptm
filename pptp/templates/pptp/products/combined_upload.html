@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/upload.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h1 class="h3 mb-4">Product Submission</h1>
+          
+          {% if messages %}
+            <div class="mb-4">
+              {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          
+          <form method="post" enctype="multipart/form-data" id="combinedUploadForm">
+            {% csrf_token %}
+            
+            <!-- Product Information Section -->
+            <div class="mb-5">
+              <h2 class="h5 mb-3">Product Information</h2>
+              <div class="mb-3">
+                <label for="{{ form.product_name.id_for_label }}" class="form-label">Product Name</label>
+                {{ form.product_name }}
+                {% if form.product_name.errors %}
+                  <div class="invalid-feedback d-block">{{ form.product_name.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">
+                  Enter the complete product name as shown on the packaging.
+                  <br>
+                  <span class="font-medium">Good examples:</span> Honey Nut Cheerios, Diet Coke Cherry
+                  <br>
+                  <span class="font-medium">Not detailed enough:</span> Cheerios, Coke
+                </div>
+                <div class="debug">
+                  Field name: {{ form.product_name.html_name }}
+                  Field ID: {{ form.product_name.id_for_label }}
+                  Current value: {{ form.product_name.value|default:"empty" }}
+                </div>
+              </div>
+              
+              <div class="card">
+                <div class="card-body">
+                  <h3 class="h6 mb-3">Product Attributes</h3>
+                  <p class="mb-3">Select all that apply:</p>
+                  
+                  <div class="row g-3">
+                    {% for field in form %}
+                      {% if field.name != 'product_name' %}
+                        <div class="col-md-6">
+                          <div class="form-check">
+                            {{ field }}
+                            <label class="form-check-label" for="{{ field.id_for_label }}">
+                              {{ field.label }}
+                            </label>
+                            <div class="form-text">{{ field.help_text }}</div>
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Barcodes Section -->
+            <div class="mb-5">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Product Barcodes</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn" data-section="barcode">
+                  <i class="bi bi-plus-circle me-1"></i> Add Barcode
+                </button>
+              </div>
+              
+              {% if existing_barcodes %}
+                <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+                  {% for barcode in existing_barcodes %}
+                    <div class="col">
+                      <div class="card h-100">
+                        {% if barcode.is_uploaded and barcode.image %}
+                          <img src="{{ barcode.image.url }}" class="card-img-top" alt="Barcode" style="height: 160px; object-fit: cover;">
+                        {% else %}
+                          <div class="card-body bg-light text-center">
+                            <p>{% trans "Pending Upload" %}</p>
+                            <p class="small">{{ barcode.device_filename }}</p>
+                          </div>
+                        {% endif %}
+                        
+                        {% if barcode.barcode_number %}
+                          <div class="card-footer py-2">
+                            <span class="font-monospace small">{{ barcode.barcode_number }}</span>
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              <div class="upload-container" id="barcodeUploadContainer">
+                <div class="upload-item barcode-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="mb-3">
+                        <label for="{{ barcode_form.image.id_for_label }}" class="form-label">Barcode Image</label>
+                        <div class="upload-zone" data-target="barcode-image">
+                          <input type="file" name="barcode-image" id="{{ barcode_form.image.id_for_label }}" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-3">
+                        <label for="{{ barcode_form.barcode_number.id_for_label }}" class="form-label">Barcode Number (optional)</label>
+                        <input type="text" name="barcode-barcode_number" id="{{ barcode_form.barcode_number.id_for_label }}" class="form-control">
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label for="{{ barcode_form.notes.id_for_label }}" class="form-label">Notes (optional)</label>
+                        <textarea name="barcode-notes" id="{{ barcode_form.notes.id_for_label }}" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <template id="barcodeTemplate">
+                <div class="upload-item barcode-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between mb-2">
+                        <h5 class="h6 mb-0">Additional Barcode</h5>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                          <i class="bi bi-trash"></i> Remove
+                        </button>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Barcode Image</label>
+                        <div class="upload-zone" data-target="barcode-image-{index}">
+                          <input type="file" name="barcode-{index}-image" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-3">
+                        <label class="form-label">Barcode Number (optional)</label>
+                        <input type="text" name="barcode-{index}-barcode_number" class="form-control">
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="barcode-{index}-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            
+            <!-- Nutrition Facts Section -->
+            <div class="mb-5">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Nutrition Facts</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn" data-section="nutrition">
+                  <i class="bi bi-plus-circle me-1"></i> Add Nutrition Facts
+                </button>
+              </div>
+              
+              {% if existing_nutrition_facts %}
+                <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+                  {% for item in existing_nutrition_facts %}
+                    <div class="col">
+                      <div class="card h-100">
+                        {% if item.is_uploaded and item.image %}
+                          <img src="{{ item.image.url }}" class="card-img-top" alt="Nutrition Facts" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                          <div class="card-body bg-light text-center">
+                            <p>{% trans "Pending Upload" %}</p>
+                            <p class="small">{{ item.device_filename }}</p>
+                          </div>
+                        {% endif %}
+                        
+                        {% if item.notes %}
+                          <div class="card-footer py-2">
+                            <span class="small">{{ item.notes }}</span>
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              <div class="upload-container" id="nutritionUploadContainer">
+                <div class="upload-item nutrition-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="mb-3">
+                        <label for="{{ nutrition_form.image.id_for_label }}" class="form-label">Nutrition Facts Image</label>
+                        <div class="upload-zone" data-target="nutrition-image">
+                          <input type="file" name="nutrition-image" id="{{ nutrition_form.image.id_for_label }}" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label for="{{ nutrition_form.notes.id_for_label }}" class="form-label">Notes (optional)</label>
+                        <textarea name="nutrition-notes" id="{{ nutrition_form.notes.id_for_label }}" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <template id="nutritionTemplate">
+                <div class="upload-item nutrition-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between mb-2">
+                        <h5 class="h6 mb-0">Additional Nutrition Facts</h5>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                          <i class="bi bi-trash"></i> Remove
+                        </button>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Nutrition Facts Image</label>
+                        <div class="upload-zone" data-target="nutrition-image-{index}">
+                          <input type="file" name="nutrition-{index}-image" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="nutrition-{index}-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            
+            <!-- Ingredients Section -->
+            <div class="mb-5">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Ingredients</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn" data-section="ingredients">
+                  <i class="bi bi-plus-circle me-1"></i> Add Ingredients
+                </button>
+              </div>
+              
+              {% if existing_ingredients %}
+                <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+                  {% for item in existing_ingredients %}
+                    <div class="col">
+                      <div class="card h-100">
+                        {% if item.is_uploaded and item.image %}
+                          <img src="{{ item.image.url }}" class="card-img-top" alt="Ingredients" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                          <div class="card-body bg-light text-center">
+                            <p>{% trans "Pending Upload" %}</p>
+                            <p class="small">{{ item.device_filename }}</p>
+                          </div>
+                        {% endif %}
+                        
+                        {% if item.notes %}
+                          <div class="card-footer py-2">
+                            <span class="small">{{ item.notes }}</span>
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              
+              <div class="upload-container" id="ingredientsUploadContainer">
+                <div class="upload-item ingredients-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="mb-3">
+                        <label for="{{ ingredients_form.image.id_for_label }}" class="form-label">Ingredients Image</label>
+                        <div class="upload-zone" data-target="ingredients-image">
+                          <input type="file" name="ingredients-image" id="{{ ingredients_form.image.id_for_label }}" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label for="{{ ingredients_form.notes.id_for_label }}" class="form-label">Notes (optional)</label>
+                        <textarea name="ingredients-notes" id="{{ ingredients_form.notes.id_for_label }}" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <template id="ingredientsTemplate">
+                <div class="upload-item ingredients-upload mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between mb-2">
+                        <h5 class="h6 mb-0">Additional Ingredients</h5>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                          <i class="bi bi-trash"></i> Remove
+                        </button>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Ingredients Image</label>
+                        <div class="upload-zone" data-target="ingredients-image-{index}">
+                          <input type="file" name="ingredients-{index}-image" class="form-control" accept="image/*">
+                          <div class="upload-preview mt-2 d-none"></div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-0">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="ingredients-{index}-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            
+            <!-- Product Images Section -->
+            <div class="mb-5">
+              <h2 class="h5 mb-3">Product Images</h2>
+              
+              <div class="row row-cols-1 row-cols-md-2 g-4">
+                <!-- Front Image -->
+                <div class="col">
+                  <div class="card h-100">
+                    <div class="card-header bg-primary text-white py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span>Front of Package (Required)</span>
+                        <span class="badge bg-light text-primary rounded-pill">Front</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      {% if product_images_by_type.front %}
+                        {% for image in product_images_by_type.front %}
+                          <div class="existing-image mb-3">
+                            <img src="{{ image.image.url }}" class="img-fluid rounded mb-2" alt="Front image">
+                            {% if image.notes %}
+                              <div class="small mb-2">{{ image.notes }}</div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                      
+                      <div class="upload-zone" data-target="image_front-image">
+                        <input type="file" name="image_front-image" class="form-control" accept="image/*">
+                        <div class="upload-preview mt-2 d-none"></div>
+                      </div>
+                      
+                      <div class="mt-2">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="image_front-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Back Image -->
+                <div class="col">
+                  <div class="card h-100">
+                    <div class="card-header bg-success text-white py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span>Back of Package (Required)</span>
+                        <span class="badge bg-light text-success rounded-pill">Back</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      {% if product_images_by_type.back %}
+                        {% for image in product_images_by_type.back %}
+                          <div class="existing-image mb-3">
+                            <img src="{{ image.image.url }}" class="img-fluid rounded mb-2" alt="Back image">
+                            {% if image.notes %}
+                              <div class="small mb-2">{{ image.notes }}</div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                      
+                      <div class="upload-zone" data-target="image_back-image">
+                        <input type="file" name="image_back-image" class="form-control" accept="image/*">
+                        <div class="upload-preview mt-2 d-none"></div>
+                      </div>
+                      
+                      <div class="mt-2">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="image_back-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Side Image -->
+                <div class="col">
+                  <div class="card h-100">
+                    <div class="card-header bg-info text-white py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span>Side of Package (Optional)</span>
+                        <span class="badge bg-light text-info rounded-pill">Side</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      {% if product_images_by_type.side %}
+                        {% for image in product_images_by_type.side %}
+                          <div class="existing-image mb-3">
+                            <img src="{{ image.image.url }}" class="img-fluid rounded mb-2" alt="Side image">
+                            {% if image.notes %}
+                              <div class="small mb-2">{{ image.notes }}</div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                      
+                      <div class="upload-zone" data-target="image_side-image">
+                        <input type="file" name="image_side-image" class="form-control" accept="image/*">
+                        <div class="upload-preview mt-2 d-none"></div>
+                      </div>
+                      
+                      <div class="mt-2">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="image_side-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Other Image -->
+                <div class="col">
+                  <div class="card h-100">
+                    <div class="card-header bg-secondary text-white py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <span>Other Package View (Optional)</span>
+                        <span class="badge bg-light text-secondary rounded-pill">Other</span>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                      {% if product_images_by_type.other %}
+                        {% for image in product_images_by_type.other %}
+                          <div class="existing-image mb-3">
+                            <img src="{{ image.image.url }}" class="img-fluid rounded mb-2" alt="Other image">
+                            {% if image.notes %}
+                              <div class="small mb-2">{{ image.notes }}</div>
+                            {% endif %}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                      
+                      <div class="upload-zone" data-target="image_other-image">
+                        <input type="file" name="image_other-image" class="form-control" accept="image/*">
+                        <div class="upload-preview mt-2 d-none"></div>
+                      </div>
+                      
+                      <div class="mt-2">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="image_other-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Validation Section -->
+            {% if validation_errors %}
+              <div class="mb-4">
+                <div class="alert alert-warning">
+                  <h4 class="alert-heading h5 mb-2">Required Items Missing</h4>
+                  <ul class="mb-0">
+                    {% for error in validation_errors %}
+                      <li>{{ error }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            {% endif %}
+            
+            <!-- Submission Buttons -->
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'products:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+              </a>
+              
+              <div>
+                <button type="submit" name="save" class="btn btn-outline-primary me-2">
+                  <i class="bi bi-save me-1"></i> Save Progress
+                </button>
+                
+                <button type="submit" name="submit" class="btn btn-success" {% if validation_errors %}disabled{% endif %}>
+                  <i class="bi bi-check-circle me-1"></i> Complete Submission
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const productId = '{{ object.id }}';
+  const csrfToken = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/upload-enhanced.js' %}"></script>
+{% endblock %}

@@ -18,6 +18,7 @@ def prefix_url_patterns(patterns):
         path(f'{URL_PREFIX}/', include((patterns, 'prefixed'), namespace=None))
     ]
 
+
 raw_urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(

@@ -1,0 +1,123 @@
+/* Main drop zone styles */
+#main-drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  #main-drop-zone.border-primary {
+    border-color: #0d6efd;
+  }
+  
+  #main-drop-zone.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.1);
+  }
+  
+  /* Individual drop zone styles */
+  .upload-zone {
+    position: relative;
+    min-height: 100px;
+    padding: 10px;
+    border: 2px dashed #dee2e6;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+  }
+  
+  .drop-zone-container input[type="file"] {
+    margin-bottom: 10px;
+  }
+  
+  .drop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .active-drop-zone .drop-overlay {
+    opacity: 1;
+    background: rgba(13, 110, 253, 0.15);
+  }
+  
+  .active-drop-zone {
+    border-color: #0d6efd;
+  }
+  
+  .drop-message {
+    background: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .drop-message i {
+    color: #0d6efd;
+    font-size: 1.25rem;
+  }
+  
+  /* Upload destination dialog */
+  .upload-destination {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .upload-destination:hover {
+    background-color: #f0f7ff;
+  }
+  
+  .preview-container {
+    border-radius: 6px;
+    padding: 10px;
+    background-color: #f8f9fa;
+  }
+  
+  /* Animation for highlighting new uploads */
+  @keyframes highlightBorder {
+    0% { border-color: #0d6efd; }
+    100% { border-color: #dee2e6; }
+  }
+  
+  .border-primary {
+    animation: highlightBorder 1.5s;
+  }
+  
+  /* Make the entire card area clickable */
+  .card-body .upload-zone {
+    cursor: pointer;
+  }
+  
+  /* Style for the existing images container */
+  .existing-image {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    #main-drop-zone {
+      padding: 20px;
+    }
+    
+    .drop-message {
+      padding: 6px 12px;
+      font-size: 0.9rem;
+    }
+  }
