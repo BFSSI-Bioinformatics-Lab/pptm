@@ -20,7 +20,6 @@ class ProductSetupForm(forms.ModelForm):
         
     def clean_product_name(self):
         name = self.cleaned_data['product_name']
-        print(f"Validating product name: '{name}'")
         if len(name.split()) < 2:
             raise forms.ValidationError(...)
         return name

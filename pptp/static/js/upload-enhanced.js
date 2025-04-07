@@ -421,17 +421,6 @@ document.addEventListener('DOMContentLoaded', function () {
           errorList.appendChild(li);
         }
 
-        // Additional validation: Check if at least one image is uploaded
-        const hasAnyImage = Array.from(formEl.querySelectorAll('input[type="file"]'))
-          .some(input => input.files && input.files.length > 0);
-        
-        if (!hasAnyImage) {
-          hasErrors = true;
-          const li = document.createElement('li');
-          li.textContent = 'Please upload at least one image';
-          errorList.appendChild(li);
-        }
-
         if (hasErrors) {
           e.preventDefault();
           const firstCard = formEl.querySelector('.card-body');
