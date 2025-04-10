@@ -1,9 +1,12 @@
 # views/products.py
+from datetime import timedelta
 from django.views.generic import CreateView, UpdateView, TemplateView
+from django.db.models import Count, Q
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.http import JsonResponse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -16,27 +19,55 @@ class BaseProductView(LoginRequiredMixin):
     def get_user_from_headers(self):
         return self.request.headers.get('Dh-User')
 
-    def get_pending_upload_count(self):
-        user = self.get_user_from_headers()
-        return sum([
-            Barcode.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            NutritionFacts.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            Ingredients.objects.filter(product__created_by=user, is_uploaded=False).count(),
-            ProductImage.objects.filter(product__created_by=user, is_uploaded=False).count(),
-        ])
 
-
-class BaseProductTemplateView(BaseProductView):
+class BaseProductTemplateView(BaseProductView, TemplateView):
     """Base class for views that render templates"""
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return context
 
 
-class ProductDashboardView(BaseProductTemplateView, TemplateView):
+class ProductDashboardView(BaseProductTemplateView):
     template_name = 'pptp/products/dashboard.html'
-
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        username = self.get_user_from_headers()
+        
+        # Get all user's products
+        user_products = Product.objects.filter(created_by=username)
+        
+        # Basic statistics
+        context['total_products'] = user_products.count()
+        context['completed_products'] = user_products.filter(submission_complete=True).count()
+        context['incomplete_products'] = context['total_products'] - context['completed_products']
+        
+        # Special product types
+        context['variety_packs'] = user_products.filter(is_variety_pack=True).count()
+        context['supplemented_foods'] = user_products.filter(is_supplemented_food=True).count()
+        
+        # Recent activity (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        context['recent_products'] = user_products.filter(created_at__gte=thirty_days_ago).count()
+        
+        # Products by image type count
+        products_with_images = user_products.annotate(
+            image_count=Count('product_images')
+        ).filter(image_count__gt=0).count()
+        context['products_with_images'] = products_with_images
+        
+        # Products with multiple nutrition facts or barcodes
+        context['multi_nutrition_products'] = user_products.filter(has_multiple_nutrition_facts=True).count()
+        context['multi_barcode_products'] = user_products.filter(has_multiple_barcodes=True).count()
+        
+        # Offline vs online submissions
+        context['offline_products'] = user_products.filter(is_offline=True).count()
+        context['online_products'] = user_products.filter(is_offline=False).count()
+        
+        # Recent submissions (limited to 5)
+        context['recent_submissions'] = user_products.order_by('-created_at')[:5]
+        
+        return context
 
 class BaseProductStepView(BaseProductTemplateView):
     """Base class for all product submission steps"""
