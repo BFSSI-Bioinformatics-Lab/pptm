@@ -7,6 +7,7 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
+from django.shortcuts import redirect
 
 URL_PREFIX = os.getenv('DJANGO_URL_PREFIX', '').strip('/')
 
@@ -20,8 +21,12 @@ def prefix_url_patterns(patterns):
     ]
 
 
+def redirect_to_products(request):
+    return redirect('products:dashboard')
+
+
 raw_urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path("", redirect_to_products, name="home"),
     path(
         "about/",
         TemplateView.as_view(template_name="pages/about.html"),
