@@ -6,11 +6,12 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
+from django.contrib.auth.mixins import LoginRequiredMixin
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm, BarcodeUploadForm, NutritionFactsUploadForm, IngredientsUploadForm, ProductImageUploadForm
 
 
-class BaseProductView():
+class BaseProductView(LoginRequiredMixin):
     """Base class for all product-related views"""
     def get_user_from_headers(self):
         return self.request.headers.get('Dh-User')
@@ -105,7 +106,7 @@ class ProductSubmissionStartView(BaseProductStepView, CreateView):
         return context
 
 
-class CombinedUploadView(UpdateView):
+class CombinedUploadView(LoginRequiredMixin, UpdateView):
     """A single page that combines all the upload steps with enhanced drag-and-drop functionality"""
     model = Product
     template_name = 'pptp/products/combined_upload.html'
