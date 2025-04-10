@@ -179,6 +179,7 @@
                     <div class="mt-2">
                       <input type="text" name="barcode-barcode_number" id="{{ barcode_form.barcode_number.id_for_label }}" class="form-control form-control-sm" placeholder="Barcode number (optional)">
                     </div>
+                    <div id="barcodeUploadContainer" class="mt-4"></div>
                   </div>
                   <div class="card-footer-form">
                     <div class="form-check">
@@ -223,6 +224,7 @@
                     <div class="mt-2">
                       <textarea name="nutrition-notes" id="{{ nutrition_form.notes.id_for_label }}" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
                     </div>
+                    <div id="nutritionUploadContainer" class="mt-4"></div>
                   </div>
                   <div class="card-footer-form">
                     <div class="form-check">
@@ -352,147 +354,7 @@
                 </div>
               </div>
             </div>
-            
-            <!-- Additional Uploads Section -->
-            <h2 class="h4 section-heading">Additional Uploads</h2>
-            
-            <!-- Additional barcodes section -->
-            {% if form.has_multiple_barcodes.value %}
-            <div class="mb-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3 class="h5 mb-0">Additional Barcodes</h3>
-                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn" data-section="barcode">
-                  <i class="bi bi-plus-circle me-1"></i> Add Barcode
-                </button>
-              </div>
-              
-              {% if existing_barcodes.count > 1 %}
-                <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
-                  {% for barcode in existing_barcodes %}
-                    {% if forloop.counter > 1 %}
-                      <div class="col">
-                        <div class="card h-100">
-                          {% if barcode.is_uploaded and barcode.image %}
-                            <img src="{{ barcode.image.url }}" class="card-img-top" alt="Barcode" style="height: 160px; object-fit: cover;">
-                          {% else %}
-                            <div class="card-body bg-light text-center">
-                              <p>{% trans "Pending Upload" %}</p>
-                              <p class="small">{{ barcode.device_filename }}</p>
-                            </div>
-                          {% endif %}
-                          
-                          {% if barcode.barcode_number %}
-                            <div class="card-footer py-2">
-                              <span class="font-monospace small">{{ barcode.barcode_number }}</span>
-                            </div>
-                          {% endif %}
-                        </div>
-                      </div>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-              {% endif %}
-              
-              <div class="upload-container" id="barcodeUploadContainer">
-                <div class="upload-item barcode-upload mb-3">
-                  <div class="card">
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6">
-                          <div class="mb-3">
-                            <label class="form-label">Barcode Image</label>
-                            <div class="upload-zone" data-target="barcode-image-extra">
-                              <div class="upload-label">
-                                <i class="bi bi-upc-scan"></i>
-                                <span>Drop barcode or click to browse</span>
-                              </div>
-                              <input type="file" name="barcode-extra-image" class="form-control" accept="image/*">
-                            </div>
-                            <div class="upload-preview"></div>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="mb-3">
-                            <label class="form-label">Barcode Number (optional)</label>
-                            <input type="text" name="barcode-extra-barcode_number" class="form-control">
-                          </div>
-                          
-                          <div class="mb-0">
-                            <label class="form-label">Notes (optional)</label>
-                            <textarea name="barcode-extra-notes" class="form-control" rows="2"></textarea>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-            
-            <!-- Additional nutrition facts section -->
-            {% if form.has_multiple_nutrition_facts.value %}
-            <div class="mb-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3 class="h5 mb-0">Additional Nutrition Facts</h3>
-                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn" data-section="nutrition">
-                  <i class="bi bi-plus-circle me-1"></i> Add Nutrition Facts
-                </button>
-              </div>
-              
-              {% if existing_nutrition_facts.count > 1 %}
-                <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
-                  {% for item in existing_nutrition_facts %}
-                    {% if forloop.counter > 1 %}
-                      <div class="col">
-                        <div class="card h-100">
-                          {% if item.is_uploaded and item.image %}
-                            <img src="{{ item.image.url }}" class="card-img-top" alt="Nutrition Facts" style="height: 160px; object-fit: cover;">
-                          {% else %}
-                            <div class="card-body bg-light text-center">
-                              <p>{% trans "Pending Upload" %}</p>
-                              <p class="small">{{ item.device_filename }}</p>
-                            </div>
-                          {% endif %}
-                        </div>
-                      </div>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-              {% endif %}
-              
-              <div id="nutritionUploadContainer">
-                <div class="upload-item nutrition-upload mb-3">
-                  <div class="card">
-                    <div class="card-body">
-                      <div class="row">
-                        <div class="col-md-6">
-                          <div class="mb-3">
-                            <label class="form-label">Nutrition Facts Image</label>
-                            <div class="upload-zone" data-target="nutrition-image-extra">
-                              <div class="upload-label">
-                                <i class="bi bi-clipboard-data"></i>
-                                <span>Drop nutrition facts or click to browse</span>
-                              </div>
-                              <input type="file" name="nutrition-extra-image" class="form-control" accept="image/*">
-                            </div>
-                            <div class="upload-preview"></div>
-                          </div>
-                        </div>
-                        <div class="col-md-6">
-                          <div class="mb-0">
-                            <label class="form-label">Notes (optional)</label>
-                            <textarea name="nutrition-extra-notes" class="form-control" rows="2"></textarea>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-            
+
             <!-- Templates for dynamic content -->
             <template id="barcodeTemplate">
               <div class="upload-item barcode-upload mb-3">
@@ -589,6 +451,15 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </template>
+
+            <template id="addButtonTemplate">
+              <div class="additional-uploads-header d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <small class="text-muted">Additional Uploads</small>
+                <button type="button" class="btn btn-sm btn-outline-primary add-more-btn">
+                  <i class="bi bi-plus-circle me-1"></i> <span class="btn-label">Add Item</span>
+                </button>
               </div>
             </template>
             
