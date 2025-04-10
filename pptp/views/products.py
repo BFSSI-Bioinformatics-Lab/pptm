@@ -194,6 +194,13 @@ class CombinedUploadView(UpdateView):
             regular_form = None
             indexed_forms = []
 
+            # Check if already uploaded via AJAX
+            already_uploaded = request.POST.get(f'{prefix}-already_uploaded') == 'true'
+
+            # If already uploaded via AJAX, skip processing this file
+            if already_uploaded:
+                return True
+
             # Check for regular upload
             if any(request.FILES.get(f'{prefix}-{field}') for field in form_class().fields if field != 'notes'):
                 regular_form = form_class(request.POST, request.FILES, prefix=prefix)
@@ -202,6 +209,14 @@ class CombinedUploadView(UpdateView):
             index = 0
             while True:
                 prefix_idx = f'{prefix}-{index}'
+                # Check if already uploaded via AJAX
+                already_uploaded_idx = request.POST.get(f'{prefix_idx}-already_uploaded') == 'true'
+
+                if already_uploaded_idx:
+                    # Skip this index as it was uploaded via AJAX
+                    index += 1
+                    continue
+
                 if any(request.FILES.get(f'{prefix_idx}-{field}') for field in form_class().fields if field != 'notes'):
                     indexed_forms.append(form_class(request.POST, request.FILES, prefix=prefix_idx))
                     index += 1
@@ -238,13 +253,18 @@ class CombinedUploadView(UpdateView):
         # Handle product images (multiple types)
         image_types = ['front', 'back', 'side', 'other']
         for image_type in image_types:
-            form = ProductImageUploadForm(request.POST, request.FILES, prefix=f'image_{image_type}')
-            if form.is_valid() and request.FILES.get(f'image_{image_type}-image'):
-                instance = form.save(commit=False)
-                instance.product = product
-                instance.image_type = image_type
-                instance.is_uploaded = True
-                instance.save()
+            # Check if already uploaded via AJAX
+            already_uploaded = request.POST.get(f'image_{image_type}-already_uploaded') == 'true'
+
+            # If not already uploaded via AJAX, process form
+            if not already_uploaded:
+                form = ProductImageUploadForm(request.POST, request.FILES, prefix=f'image_{image_type}')
+                if form.is_valid() and request.FILES.get(f'image_{image_type}-image'):
+                    instance = form.save(commit=False)
+                    instance.product = product
+                    instance.image_type = image_type
+                    instance.is_uploaded = True
+                    instance.save()
 
     def get_validation_errors(self, product):
         """Check all requirements and return list of validation errors"""
@@ -339,7 +359,8 @@ def ajax_upload_image(request, pk):
         return JsonResponse({
             'success': True,
             'image_id': image.id,
-            'image_url': image.image.url
+            'image_url': image.image.url,
+            'image_type': image_type
         })
 
     except Exception as e:

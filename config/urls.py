@@ -10,10 +10,11 @@ from django.views.generic import TemplateView
 
 URL_PREFIX = os.getenv('DJANGO_URL_PREFIX', '').strip('/')
 
+
 def prefix_url_patterns(patterns):
     if not URL_PREFIX:
         return patterns
-    
+
     return [
         path(f'{URL_PREFIX}/', include((patterns, 'prefixed'), namespace=None))
     ]
