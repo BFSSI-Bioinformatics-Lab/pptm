@@ -208,40 +208,24 @@ document.addEventListener('DOMContentLoaded', function() {
   function setupFileInput(input) {
     if (!input) return;
     
-    console.log(`Setting up file input: ${input.name}`);
-    
-    // Find the closest parent that contains both the upload zone and preview container
     const cardBody = input.closest('.card-body');
     if (!cardBody) {
-      console.log(`Could not find card-body for input: ${input.name}`);
       return;
     }
     
-    // Find the preview container in the same card-body
     const previewContainer = cardBody.querySelector('.upload-preview');
     
-    console.log(`Card body found: ${!!cardBody}`);
-    console.log(`Preview container found: ${!!previewContainer}`);
-    
     if (!previewContainer) {
-      console.log(`Preview container not found for input: ${input.name}`);
-      console.log(`HTML structure of card-body:`, cardBody.innerHTML);
       return;
     }
     
     input.addEventListener('change', function() {
-      console.log(`Change event on input: ${this.name}`);
       
       if (this.files && this.files[0]) {
         const file = this.files[0];
-        console.log(`File selected: ${file.name}`);
         
-        // Update preview
-        console.log("Updating preview...");
         updatePreview(file, previewContainer);
         
-        // Prepare for upload
-        console.log("Preparing for upload...");
         prepareFileForUpload(file, this);
       }
     });
@@ -250,8 +234,6 @@ document.addEventListener('DOMContentLoaded', function() {
   function updatePreview(file, previewContainer) {
     previewContainer.innerHTML = '';
     previewContainer.classList.remove('show');
-
-    console.log("updating preview")
     
     if (!file.type.match('image.*')) {
       return;
