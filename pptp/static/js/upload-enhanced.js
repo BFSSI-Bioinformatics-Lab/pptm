@@ -172,6 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+  // Handle checkbox changes for multiple uploads
+  setupMultipleUploadCheckboxes();
+
   // Initialize all existing file inputs
   document.querySelectorAll('input[type="file"]').forEach(input => {
     setupFileInput(input);
@@ -185,50 +188,288 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // FUNCTION DEFINITIONS
 
+  function setupMultipleUploadCheckboxes() {
+    // Monitor checkbox changes for multiple barcodes
+    const multipleBarcodeCheckbox = document.getElementById('id_has_multiple_barcodes');
+    if (multipleBarcodeCheckbox) {
+      multipleBarcodeCheckbox.addEventListener('change', function() {
+        setTimeout(() => {
+          // Find the barcode card
+          const barcodeCard = document.querySelector('.card-footer-form:has(#id_has_multiple_barcodes)').closest('.card');
+          
+          if (barcodeCard) {
+            // Check if we already have an additional uploads container
+            let additionalContainer = barcodeCard.querySelector('.additional-uploads-container');
+            
+            if (this.checked) {
+              // Create container if it doesn't exist
+              if (!additionalContainer) {
+                additionalContainer = document.createElement('div');
+                additionalContainer.className = 'additional-uploads-container mt-3';
+                
+                // Create header with Add button
+                const header = document.createElement('div');
+                header.className = 'd-flex justify-content-between align-items-center mb-2 px-3';
+                header.innerHTML = `
+                  <small class="text-muted">Additional Barcodes</small>
+                  <button type="button" class="btn btn-sm btn-outline-primary add-barcode-btn">
+                    <i class="bi bi-plus-circle me-1"></i> Add
+                  </button>
+                `;
+                
+                // Create container for upload items
+                const uploadContainer = document.createElement('div');
+                uploadContainer.id = 'barcodeUploadContainer';
+                uploadContainer.className = 'px-3';
+                
+                additionalContainer.appendChild(header);
+                additionalContainer.appendChild(uploadContainer);
+                
+                // Insert before the card footer
+                const cardFooter = barcodeCard.querySelector('.card-footer-form');
+                barcodeCard.insertBefore(additionalContainer, cardFooter);
+                
+                // Set up Add button event
+                additionalContainer.querySelector('.add-barcode-btn').addEventListener('click', function() {
+                  addNewUploadSection('barcode');
+                });
+              } else {
+                // If it exists, just show it
+                additionalContainer.style.display = 'block';
+              }
+              
+              // Add an upload item if none exist
+              const uploadItems = document.querySelectorAll('#barcodeUploadContainer .barcode-upload');
+              if (uploadItems.length === 0) {
+                addNewUploadSection('barcode');
+              }
+            } else if (additionalContainer) {
+              // Hide if checkbox is unchecked
+              additionalContainer.style.display = 'none';
+            }
+          }
+        }, 0);
+      });
+      
+      // Initialize on page load
+      setTimeout(() => {
+        if (multipleBarcodeCheckbox.checked) {
+          // Trigger change event to set up initial state
+          const event = new Event('change');
+          multipleBarcodeCheckbox.dispatchEvent(event);
+        }
+      }, 0);
+    }
+    
+    // Similar code for multiple nutrition facts
+    const multipleNutritionCheckbox = document.getElementById('id_has_multiple_nutrition_facts');
+    if (multipleNutritionCheckbox) {
+      multipleNutritionCheckbox.addEventListener('change', function() {
+        setTimeout(() => {
+          // Find the nutrition card
+          const nutritionCard = document.querySelector('.card-footer-form:has(#id_has_multiple_nutrition_facts)').closest('.card');
+          
+          if (nutritionCard) {
+            // Check if we already have an additional uploads container
+            let additionalContainer = nutritionCard.querySelector('.additional-uploads-container');
+            
+            if (this.checked) {
+              // Create container if it doesn't exist
+              if (!additionalContainer) {
+                additionalContainer = document.createElement('div');
+                additionalContainer.className = 'additional-uploads-container mt-3';
+                
+                // Create header with Add button
+                const header = document.createElement('div');
+                header.className = 'd-flex justify-content-between align-items-center mb-2 px-3';
+                header.innerHTML = `
+                  <small class="text-muted">Additional Nutrition Facts</small>
+                  <button type="button" class="btn btn-sm btn-outline-primary add-nutrition-btn">
+                    <i class="bi bi-plus-circle me-1"></i> Add
+                  </button>
+                `;
+                
+                // Create container for upload items
+                const uploadContainer = document.createElement('div');
+                uploadContainer.id = 'nutritionUploadContainer';
+                uploadContainer.className = 'px-3';
+                
+                additionalContainer.appendChild(header);
+                additionalContainer.appendChild(uploadContainer);
+                
+                // Insert before the card footer
+                const cardFooter = nutritionCard.querySelector('.card-footer-form');
+                nutritionCard.insertBefore(additionalContainer, cardFooter);
+                
+                // Set up Add button event
+                additionalContainer.querySelector('.add-nutrition-btn').addEventListener('click', function() {
+                  addNewUploadSection('nutrition');
+                });
+              } else {
+                // If it exists, just show it
+                additionalContainer.style.display = 'block';
+              }
+              
+              // Add an upload item if none exist
+              const uploadItems = document.querySelectorAll('#nutritionUploadContainer .nutrition-upload');
+              if (uploadItems.length === 0) {
+                addNewUploadSection('nutrition');
+              }
+            } else if (additionalContainer) {
+              // Hide if checkbox is unchecked
+              additionalContainer.style.display = 'none';
+            }
+          }
+        }, 0);
+      });
+      
+      // Initialize on page load
+      setTimeout(() => {
+        if (multipleNutritionCheckbox.checked) {
+          // Trigger change event to set up initial state
+          const event = new Event('change');
+          multipleNutritionCheckbox.dispatchEvent(event);
+        }
+      }, 0);
+    }
+  }
+  
+  // Modified version for compact layout within the same card
   function addNewUploadSection(section) {
     state.counters[section]++;
     const index = state.counters[section];
-
-    const template = document.getElementById(`${section}Template`).innerHTML
-      .replace(/{index}/g, index);
-
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = template;
-    const newElement = tempDiv.firstElementChild;
-
-    document.getElementById(`${section}UploadContainer`).appendChild(newElement);
-
-    newElement.querySelector('.remove-upload-btn')?.addEventListener('click', function() {
-      newElement.remove();
-    });
-
-    setupFileInput(newElement.querySelector('input[type="file"]'));
+  
+    // Create a new upload item element
+    const newElement = document.createElement('div');
+    newElement.className = `${section}-upload mb-3`;
+    
+    if (section === 'barcode') {
+      newElement.innerHTML = `
+        <div class="card">
+          <div class="card-body pb-2">
+            <div class="d-flex justify-content-between mb-2">
+              <small class="text-muted">Additional Barcode</small>
+              <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            <div class="upload-zone" data-target="${section}-image-${index}">
+              <div class="upload-label">
+                <i class="bi bi-upc-scan"></i>
+                <span>Drop barcode or click to browse</span>
+              </div>
+              <input type="file" name="${section}-${index}-image" class="form-control" accept="image/*">
+            </div>
+            <div class="upload-preview"></div>
+            <div class="mt-2">
+              <input type="text" name="${section}-${index}-barcode_number" class="form-control form-control-sm" placeholder="Barcode number (optional)">
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (section === 'nutrition') {
+      newElement.innerHTML = `
+        <div class="card">
+          <div class="card-body pb-2">
+            <div class="d-flex justify-content-between mb-2">
+              <small class="text-muted">Additional Nutrition Facts</small>
+              <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            <div class="upload-zone" data-target="${section}-image-${index}">
+              <div class="upload-label">
+                <i class="bi bi-clipboard-data"></i>
+                <span>Drop nutrition facts or click to browse</span>
+              </div>
+              <input type="file" name="${section}-${index}-image" class="form-control" accept="image/*">
+            </div>
+            <div class="upload-preview"></div>
+            <div class="mt-2">
+              <textarea name="${section}-${index}-notes" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  
+    // Add to container
+    const container = document.getElementById(`${section}UploadContainer`);
+    if (container) {
+      container.appendChild(newElement);
+  
+      // Set up remove button
+      newElement.querySelector('.remove-upload-btn').addEventListener('click', function() {
+        newElement.remove();
+      });
+  
+      // Set up file input
+      setupFileInput(newElement.querySelector('input[type="file"]'));
+    } else {
+      console.error(`Container #${section}UploadContainer not found`);
+    }
+    
+    return newElement;
   }
 
   function setupFileInput(input) {
     if (!input) return;
     
     const cardBody = input.closest('.card-body');
-    if (!cardBody) {
-      return;
-    }
+    if (!cardBody) return;
     
     const previewContainer = cardBody.querySelector('.upload-preview');
-    
-    if (!previewContainer) {
-      return;
-    }
+    if (!previewContainer) return;
     
     input.addEventListener('change', function() {
-      
       if (this.files && this.files[0]) {
         const file = this.files[0];
-        
         updatePreview(file, previewContainer);
-        
         prepareFileForUpload(file, this);
       }
     });
+    
+    // Setup drag and drop
+    const uploadZone = cardBody.querySelector('.upload-zone');
+    if (uploadZone) {
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+          uploadZone.classList.add('highlight');
+        }, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+          uploadZone.classList.remove('highlight');
+        }, false);
+      });
+      
+      uploadZone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          input.files = files;
+          const file = files[0];
+          updatePreview(file, previewContainer);
+          prepareFileForUpload(file, input);
+        }
+      }, false);
+      
+      // Make the whole zone clickable to trigger file input
+      uploadZone.addEventListener('click', () => {
+        input.click();
+      });
+    }
   }
     
   function updatePreview(file, previewContainer) {
@@ -236,6 +477,11 @@ document.addEventListener('DOMContentLoaded', function() {
     previewContainer.classList.remove('show');
     
     if (!file.type.match('image.*')) {
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'alert alert-warning mt-2';
+      errorMsg.textContent = 'Please select an image file';
+      previewContainer.appendChild(errorMsg);
+      previewContainer.classList.add('show');
       return;
     }
 
@@ -444,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (formEl && submitButton && productNameField) {
       function updateSubmitButton() {
         const nameValue = productNameField.value.trim();
-        const validationErrors = document.querySelector('.validation_errors');
+        const validationErrors = document.querySelector('.alert.alert-warning');
 
         submitButton.disabled = nameValue === '' || 
                                (validationErrors && validationErrors.children.length > 0) ||
@@ -501,6 +747,68 @@ document.addEventListener('DOMContentLoaded', function() {
             const li = document.createElement('li');
             li.textContent = 'Please wait for all uploads to complete before submitting';
             errorList.appendChild(li);
+          }
+
+          // Check required files (front, back, barcode, nutrition, ingredients)
+          const requiredTypes = {
+            'front': 'Front of package',
+            'back': 'Back of package',
+            'barcode': 'Barcode',
+            'nutrition': 'Nutrition facts',
+            'ingredients': 'Ingredients'
+          };
+          
+          const missingTypes = [];
+          
+          for (const [type, label] of Object.entries(requiredTypes)) {
+            let found = false;
+            
+            if (type === 'front' || type === 'back') {
+              found = !!document.querySelector(`.existing-image img[alt="${type} image"]`) || 
+                     !!document.querySelector(`[name="image_${type}-image"]`).files.length;
+            } else {
+              found = !!document.querySelector(`.existing-image img[alt="${label}"]`) || 
+                     !!document.querySelector(`[name="${type}-image"]`).files.length;
+            }
+            
+            if (!found) {
+              missingTypes.push(label);
+            }
+          }
+          
+          if (missingTypes.length > 0) {
+            hasErrors = true;
+            const li = document.createElement('li');
+            li.textContent = `Missing required images: ${missingTypes.join(', ')}`;
+            errorList.appendChild(li);
+          }
+
+          // Check multiple barcodes if needed
+          const hasMultipleBarcodes = document.getElementById('id_has_multiple_barcodes').checked;
+          if (hasMultipleBarcodes) {
+            const barcodeCount = document.querySelectorAll('.existing-image img[alt="Barcode"]').length + 
+                               document.querySelectorAll('.barcode-upload input[type="file"]').length;
+            
+            if (barcodeCount < 2) {
+              hasErrors = true;
+              const li = document.createElement('li');
+              li.textContent = 'Multiple barcodes were indicated but not all were uploaded';
+              errorList.appendChild(li);
+            }
+          }
+          
+          // Check multiple nutrition facts if needed
+          const hasMultipleNutrition = document.getElementById('id_has_multiple_nutrition_facts').checked;
+          if (hasMultipleNutrition) {
+            const nutritionCount = document.querySelectorAll('.existing-image img[alt="Nutrition Facts"]').length + 
+                                 document.querySelectorAll('.nutrition-upload input[type="file"]').length;
+            
+            if (nutritionCount < 2) {
+              hasErrors = true;
+              const li = document.createElement('li');
+              li.textContent = 'Multiple nutrition facts were indicated but not all were uploaded';
+              errorList.appendChild(li);
+            }
           }
 
           if (hasErrors) {
