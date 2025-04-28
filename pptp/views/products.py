@@ -111,10 +111,11 @@ class ProductSetupView(BaseProductStepView, UpdateView):
         return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
 
 
-class ProductSubmissionStartView(BaseProductStepView, CreateView):
+class ProductSubmissionStartView(LoginRequiredMixin, CreateView):
     model = Product
     fields = []
     template_name = 'pptp/products/submission_start.html'
+    view_step = 'start'  # Define the step directly here
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -123,22 +124,11 @@ class ProductSubmissionStartView(BaseProductStepView, CreateView):
     def get_success_url(self):
         return reverse_lazy('products:combined_upload', kwargs={'pk': self.object.pk})
 
-    def is_previous_step_complete(self):
-        return True
-
-    def get_previous_step_url(self):
-        return reverse_lazy('products:dashboard')
-
-    def get_product(self):
-        return None
-
     def get_context_data(self, **kwargs):
-        context = BaseProductStepView.get_context_data(self, **kwargs)
-
-        if hasattr(self, 'object') and self.object:
-            context['object'] = self.object
-        if 'form' not in context:
-            context['form'] = self.get_form()
+        # Call CreateView's get_context_data directly
+        context = super().get_context_data(**kwargs)
+        # Add the view_step manually
+        context['view_step'] = self.view_step
         return context
 
 
