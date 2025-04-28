@@ -69,6 +69,7 @@ class ProductDashboardView(BaseProductTemplateView):
         
         return context
 
+
 class BaseProductStepView(BaseProductTemplateView):
     """Base class for all product submission steps"""
     view_step = None  # Will be set by child classes
@@ -132,8 +133,12 @@ class ProductSubmissionStartView(BaseProductStepView, CreateView):
         return None
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.pop('product', None)
+        context = BaseProductStepView.get_context_data(self, **kwargs)
+
+        if hasattr(self, 'object') and self.object:
+            context['object'] = self.object
+        if 'form' not in context:
+            context['form'] = self.get_form()
         return context
 
 
