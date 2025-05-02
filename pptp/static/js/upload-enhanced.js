@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('Initializing enhanced upload functionality');
+  
   // Configuration
   const config = {
     sections: ['barcode', 'nutrition', 'ingredients'],
@@ -8,9 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // State tracking
   const state = {
     counters: {
-      'barcode': 0,
-      'nutrition': 0, 
-      'ingredients': 0
+      barcode: 0,
+      nutrition: 0, 
+      ingredients: 0
     },
     activeUploads: 0,
     uploadResults: []
@@ -19,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // File Uploader class for handling parallel uploads
   class FileUploader {
     constructor(options) {
+      console.log('Initializing FileUploader', options);
       this.baseUrl = options.baseUrl || '';
       this.productId = options.productId;
       this.csrfToken = options.csrfToken;
@@ -33,19 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     addFile(file, imageType, formPrefix, extraData = {}) {
-      this.queue.push({
-        file,
-        imageType,
-        formPrefix,
-        extraData
-      });
-      
+      console.log(`Adding file to upload queue: ${formPrefix}, type: ${imageType}`);
+      this.queue.push({ file, imageType, formPrefix, extraData });
       this.processQueue();
       return this;
     }
     
     processQueue() {
       if (this.queue.length === 0 && this.activeUploads === 0) {
+        console.log('Upload queue completed, triggering onComplete');
         this.onComplete(this.results);
         return;
       }
@@ -59,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadFile(item) {
       this.activeUploads++;
       state.activeUploads++;
+      console.log(`Starting upload: ${item.formPrefix}, active uploads: ${state.activeUploads}`);
       
       const xhr = new XMLHttpRequest();
       const formData = new FormData();
@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
           const response = JSON.parse(xhr.responseText);
+          console.log(`Upload completed: ${item.formPrefix}, status: ${xhr.status}`, response);
           
           if (xhr.status >= 200 && xhr.status < 300 && response.success) {
             this.results.push({
@@ -94,17 +95,20 @@ document.addEventListener('DOMContentLoaded', function() {
               imageUrl: response.image_url
             });
           } else {
+            const errorMsg = response.error || `Server error: ${xhr.status}`;
+            console.error(`Upload failed: ${item.formPrefix}`, errorMsg);
             this.results.push({
               file: item.file,
               formPrefix: item.formPrefix,
               success: false,
               imageType: item.imageType,
-              error: response.error || `Server error: ${xhr.status}`
+              error: errorMsg
             });
             
-            this.onError(item, response.error || `Server error: ${xhr.status}`);
+            this.onError(item, errorMsg);
           }
         } catch (e) {
+          console.error(`Error parsing server response: ${item.formPrefix}`, e);
           this.results.push({
             file: item.file,
             formPrefix: item.formPrefix,
@@ -122,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
       xhr.onerror = () => {
         this.activeUploads--;
         state.activeUploads--;
+        console.error(`Network error during upload: ${item.formPrefix}`);
         
         this.results.push({
           file: item.file,
@@ -138,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const uploadUrl = document.getElementById('ajax-upload-url')?.value || '/upload';
       xhr.open('POST', uploadUrl);
       
-      // Get CSRF token
       const csrfToken = this.csrfToken || document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
       if (csrfToken) {
         xhr.setRequestHeader('X-CSRFToken', csrfToken);
@@ -157,9 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
       updateProgressUI(item.formPrefix, percentage);
     },
     onComplete: (results) => {
+      console.log('All uploads completed', results);
       showCompletionStatus(results);
     },
     onError: (item, error) => {
+      console.error(`Upload error: ${item.formPrefix}`, error);
       showErrorMessage(item.formPrefix, error);
     }
   });
@@ -168,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.add-more-btn').forEach(button => {
     button.addEventListener('click', function() {
       const section = this.dataset.section;
+      console.log(`Adding new upload section: ${section}`);
       addNewUploadSection(section);
     });
   });
@@ -187,186 +194,115 @@ document.addEventListener('DOMContentLoaded', function() {
   setupFormSubmissionHandling();
 
   // FUNCTION DEFINITIONS
-
   function setupMultipleUploadCheckboxes() {
-    // Monitor checkbox changes for multiple barcodes
-    const multipleBarcodeCheckbox = document.getElementById('id_has_multiple_barcodes');
-    if (multipleBarcodeCheckbox) {
-      multipleBarcodeCheckbox.addEventListener('change', function() {
-        setTimeout(() => {
-          // Find the barcode card
-          const barcodeCard = document.querySelector('.card-footer-form:has(#id_has_multiple_barcodes)').closest('.card');
+    console.log('Setting up multiple upload checkboxes');
+    
+    function setupCheckbox(checkboxId, containerId, sectionType, buttonLabel) {
+      const checkbox = document.getElementById(checkboxId);
+      if (!checkbox) return;
+      
+      checkbox.addEventListener('change', function() {
+        console.log(`Checkbox change: ${checkboxId} = ${this.checked}`);
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (this.checked) {
+          container.style.display = 'block';
           
-          if (barcodeCard) {
-            // Get the container or create it if it doesn't exist
-            let barcodeContainer = document.getElementById('barcodeUploadContainer');
-            
-            if (this.checked) {
-              // Make sure the container is visible
-              if (barcodeContainer) {
-                // Show the container
-                barcodeContainer.style.display = 'block';
-                
-                // Find or create the header
-                let headerEl = barcodeContainer.querySelector('.additional-uploads-header');
-                if (!headerEl) {
-                  // Create the add button from template
-                  const addButtonTemplate = document.getElementById('addButtonTemplate');
-                  if (addButtonTemplate) {
-                    headerEl = document.importNode(addButtonTemplate.content, true);
-                    // Update the button for barcodes
-                    const addButton = headerEl.querySelector('.add-more-btn');
-                    if (addButton) {
-                      addButton.setAttribute('data-section', 'barcode');
-                      addButton.querySelector('.btn-label').textContent = 'Add Barcode';
-                    }
-                    // Add header before container contents
-                    barcodeContainer.prepend(headerEl);
-                  }
-                }
-                
-                // If empty, add the first upload item
-                if (barcodeContainer.querySelectorAll('.barcode-upload').length === 0) {
-                  addNewUploadSection('barcode');
-                }
+          let headerEl = container.querySelector('.additional-uploads-header');
+          if (!headerEl) {
+            const addButtonTemplate = document.getElementById('addButtonTemplate');
+            if (addButtonTemplate) {
+              headerEl = document.importNode(addButtonTemplate.content, true);
+              const addButton = headerEl.querySelector('.add-more-btn');
+              if (addButton) {
+                addButton.setAttribute('data-section', sectionType);
+                addButton.querySelector('.btn-label').textContent = buttonLabel;
               }
-            } else if (barcodeContainer) {
-              // Hide the container
-              barcodeContainer.style.display = 'none';
+              container.prepend(headerEl);
             }
           }
-        }, 0);
+          
+          if (container.querySelectorAll(`.${sectionType}-upload`).length === 0) {
+            addNewUploadSection(sectionType);
+          }
+        } else {
+          container.style.display = 'none';
+        }
       });
       
       // Initialize on page load
       setTimeout(() => {
-        if (multipleBarcodeCheckbox.checked) {
-          // Trigger change event to set up initial state
+        if (checkbox.checked) {
           const event = new Event('change');
-          multipleBarcodeCheckbox.dispatchEvent(event);
+          checkbox.dispatchEvent(event);
         } else {
-          // Hide the container initially
-          const barcodeContainer = document.getElementById('barcodeUploadContainer');
-          if (barcodeContainer) {
-            barcodeContainer.style.display = 'none';
+          const container = document.getElementById(containerId);
+          if (container) {
+            container.style.display = 'none';
           }
         }
       }, 0);
     }
     
-    // Similar logic for nutrition facts
-    const multipleNutritionCheckbox = document.getElementById('id_has_multiple_nutrition_facts');
-    if (multipleNutritionCheckbox) {
-      multipleNutritionCheckbox.addEventListener('change', function() {
-        setTimeout(() => {
-          // Find the nutrition card
-          const nutritionCard = document.querySelector('.card-footer-form:has(#id_has_multiple_nutrition_facts)').closest('.card');
-          
-          if (nutritionCard) {
-            // Get the container
-            let nutritionContainer = document.getElementById('nutritionUploadContainer');
-            
-            if (this.checked) {
-              // Make sure the container is visible
-              if (nutritionContainer) {
-                // Show the container
-                nutritionContainer.style.display = 'block';
-                
-                // Find or create the header
-                let headerEl = nutritionContainer.querySelector('.additional-uploads-header');
-                if (!headerEl) {
-                  // Create the add button from template
-                  const addButtonTemplate = document.getElementById('addButtonTemplate');
-                  if (addButtonTemplate) {
-                    headerEl = document.importNode(addButtonTemplate.content, true);
-                    // Update the button for nutrition facts
-                    const addButton = headerEl.querySelector('.add-more-btn');
-                    if (addButton) {
-                      addButton.setAttribute('data-section', 'nutrition');
-                      addButton.querySelector('.btn-label').textContent = 'Add Nutrition Facts';
-                    }
-                    // Add header before container contents
-                    nutritionContainer.prepend(headerEl);
-                  }
-                }
-                
-                // If empty, add the first upload item
-                if (nutritionContainer.querySelectorAll('.nutrition-upload').length === 0) {
-                  addNewUploadSection('nutrition');
-                }
-              }
-            } else if (nutritionContainer) {
-              // Hide the container
-              nutritionContainer.style.display = 'none';
-            }
-          }
-        }, 0);
-      });
-      
-      // Initialize on page load
-      setTimeout(() => {
-        if (multipleNutritionCheckbox.checked) {
-          // Trigger change event to set up initial state
-          const event = new Event('change');
-          multipleNutritionCheckbox.dispatchEvent(event);
-        } else {
-          // Hide the container initially
-          const nutritionContainer = document.getElementById('nutritionUploadContainer');
-          if (nutritionContainer) {
-            nutritionContainer.style.display = 'none';
-          }
-        }
-      }, 0);
-    }
+    // Setup for barcodes
+    setupCheckbox(
+      'id_has_multiple_barcodes',
+      'barcodeUploadContainer',
+      'barcode',
+      'Add Barcode'
+    );
+    
+    // Setup for nutrition facts
+    setupCheckbox(
+      'id_has_multiple_nutrition_facts',
+      'nutritionUploadContainer',
+      'nutrition',
+      'Add Nutrition Facts'
+    );
   }
   
   function addNewUploadSection(section) {
     state.counters[section]++;
     const index = state.counters[section];
+    console.log(`Creating new ${section} upload section with index ${index}`);
   
-    // Get the template for this section
     const templateElement = document.getElementById(`${section}Template`);
     if (!templateElement) {
       console.error(`Template #${section}Template not found`);
       return null;
     }
     
-    // Clone the template
     const newElement = document.importNode(templateElement.content, true);
-    
-    // Replace all {index} placeholders in attributes and textContent
     replaceIndexPlaceholders(newElement, index);
     
-    // Add to container
     const container = document.getElementById(`${section}UploadContainer`);
-    if (container) {
-      container.appendChild(newElement);
-      
-      // Setup event handlers for the new element
-      const uploadItem = container.lastElementChild;
-      
-      // Set up remove button
-      const removeBtn = uploadItem.querySelector('.remove-upload-btn');
-      if (removeBtn) {
-        removeBtn.addEventListener('click', function() {
-          uploadItem.remove();
-        });
-      }
-      
-      // Set up file input
-      const fileInput = uploadItem.querySelector('input[type="file"]');
-      if (fileInput) {
-        setupFileInput(fileInput);
-      }
-      
-      return uploadItem;
-    } else {
+    if (!container) {
       console.error(`Container #${section}UploadContainer not found`);
       return null;
     }
+    
+    container.appendChild(newElement);
+    const uploadItem = container.lastElementChild;
+    
+    // Set up remove button
+    const removeBtn = uploadItem.querySelector('.remove-upload-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        console.log(`Removing ${section} upload item ${index}`);
+        uploadItem.remove();
+      });
+    }
+    
+    // Set up file input
+    const fileInput = uploadItem.querySelector('input[type="file"]');
+    if (fileInput) {
+      setupFileInput(fileInput);
+    }
+    
+    return uploadItem;
   }
   
-  // Helper function to replace all {index} placeholders in the element and its children
   function replaceIndexPlaceholders(element, index) {
     // Replace in attributes
     if (element.attributes) {
@@ -389,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   }
+
   function setupFileInput(input) {
     if (!input) return;
     
@@ -397,10 +334,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const previewContainer = cardBody.querySelector('.upload-preview');
     if (!previewContainer) return;
+
+    console.log(`Setting up file input: ${input.name}`);
     
     input.addEventListener('change', function() {
       if (this.files && this.files[0]) {
         const file = this.files[0];
+        console.log(`File selected: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
         updatePreview(file, previewContainer);
         prepareFileForUpload(file, this);
       }
@@ -410,13 +350,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadZone = cardBody.querySelector('.upload-zone');
     if (uploadZone) {
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadZone.addEventListener(eventName, preventDefaults, false);
+        uploadZone.addEventListener(eventName, e => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
       });
-      
-      function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
       
       ['dragenter', 'dragover'].forEach(eventName => {
         uploadZone.addEventListener(eventName, () => {
@@ -435,6 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = dt.files;
         
         if (files.length > 0) {
+          console.log(`File dropped: ${files[0].name}`);
           input.files = files;
           const file = files[0];
           updatePreview(file, previewContainer);
@@ -442,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }, false);
       
-      // Make the whole zone clickable to trigger file input
+      // Make the whole zone clickable
       uploadZone.addEventListener('click', () => {
         input.click();
       });
@@ -454,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
     previewContainer.classList.remove('show');
     
     if (!file.type.match('image.*')) {
+      console.warn(`File is not an image: ${file.type}`);
       const errorMsg = document.createElement('div');
       errorMsg.className = 'alert alert-warning mt-2';
       errorMsg.textContent = 'Please select an image file';
@@ -462,16 +402,15 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    console.log(`Generating preview for: ${file.name}`);
     const reader = new FileReader();
 
     reader.onload = function(e) {
       previewContainer.classList.add('show');
-
       const img = document.createElement('img');
       img.src = e.target.result;
       img.classList.add('img-fluid', 'rounded', 'mb-2');
       img.style.maxHeight = '200px';
-
       previewContainer.appendChild(img);
     };
 
@@ -484,18 +423,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Store original filename
     fileInput.dataset.originalFileName = file.name;
     
-    // Extract form prefix and image type from input name
+    // Parse input name to determine form prefix and image type
     const inputName = fileInput.name;
     let formPrefix = '';
     let imageType = '';
     
     if (inputName.startsWith('image_')) {
-      // Product image types (image_front-image, etc.)
       const parts = inputName.split('-')[0];
       formPrefix = parts;
       imageType = parts.replace('image_', '');
     } else {
-      // Other image types (barcode-image, nutrition-image, etc.)
       const parts = inputName.split('-');
       if (parts.length === 2) {
         formPrefix = parts[0];
@@ -507,9 +444,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (!formPrefix || !imageType) {
-      console.error("Could not determine image type from input name:", inputName);
+      console.error(`Could not determine image type from input name: ${inputName}`);
       return;
     }
+    
+    console.log(`Preparing upload: ${formPrefix}, type: ${imageType}`);
     
     // Collect additional form data
     const extraData = {};
@@ -528,6 +467,8 @@ document.addEventListener('DOMContentLoaded', function() {
       extraData.notes = notesInput.value || '';
     }
     
+    console.log(`Extra data for ${formPrefix}:`, extraData);
+    
     // Create progress UI
     createProgressUI(fileInput, formPrefix);
     
@@ -542,6 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if progress UI already exists
     let progressContainer = container.querySelector('.upload-progress');
     if (!progressContainer) {
+      console.log(`Creating progress UI for ${formPrefix}`);
       progressContainer = document.createElement('div');
       progressContainer.className = 'upload-progress mt-3';
       progressContainer.innerHTML = `
@@ -590,6 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const progressUI = container.querySelector('.upload-progress');
       
       if (result.success) {
+        console.log(`Showing success UI for ${result.formPrefix}`);
         if (statusDiv) {
           statusDiv.textContent = 'Upload complete!';
           statusDiv.classList.add('text-success');
@@ -614,6 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       } else {
+        console.log(`Showing error UI for ${result.formPrefix}: ${result.error}`);
         if (statusDiv) {
           statusDiv.textContent = `Error: ${result.error}`;
           statusDiv.classList.add('text-danger');
@@ -632,6 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const retryBtn = errorDiv.querySelector('.retry-btn');
           if (retryBtn) {
             retryBtn.addEventListener('click', function() {
+              console.log(`Retry clicked for ${result.formPrefix}`);
               fileInput.value = '';
               if (progressUI) {
                 progressUI.remove();
@@ -660,18 +605,27 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function initializeFormValidation() {
-    const formEl = document.getElementById('combinedUploadForm');
+    console.log('Initializing form validation');
+    const form = document.getElementById('combinedUploadForm');
     const submitButton = document.querySelector('button[name="submit"]');
     const productNameField = document.querySelector('input[name="product_name"]');
 
-    if (formEl && submitButton && productNameField) {
+    if (form && submitButton && productNameField) {
       function updateSubmitButton() {
         const nameValue = productNameField.value.trim();
         const validationErrors = document.querySelector('.alert.alert-warning');
-
-        submitButton.disabled = nameValue === '' || 
-                               (validationErrors && validationErrors.children.length > 0) ||
-                               state.activeUploads > 0;
+        const disabled = nameValue === '' || 
+                       (validationErrors && validationErrors.children.length > 0) ||
+                       state.activeUploads > 0;
+        
+        submitButton.disabled = disabled;
+        if (disabled) {
+          console.log('Submit button disabled', {
+            emptyName: nameValue === '',
+            hasErrors: !!(validationErrors && validationErrors.children.length > 0),
+            activeUploads: state.activeUploads
+          });
+        }
       }
 
       // Initial update
@@ -687,6 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function setupFormSubmissionHandling() {
+    console.log('Setting up form submission handling');
     const form = document.getElementById('combinedUploadForm');
     
     if (form) {
@@ -726,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function() {
             errorList.appendChild(li);
           }
 
-          // Check required files (front, back, barcode, nutrition, ingredients)
+          // Check required files
           const requiredTypes = {
             'front': 'Front of package',
             'back': 'Back of package',
@@ -789,12 +744,15 @@ document.addEventListener('DOMContentLoaded', function() {
           }
 
           if (hasErrors) {
+            console.warn('Form validation failed', errorList.innerHTML);
             e.preventDefault();
             const firstCard = form.querySelector('.card-body');
             firstCard.insertBefore(errorContainer, firstCard.firstChild);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
           }
+          
+          console.log('Form validation passed, preparing for submission');
         }
         
         // Process file inputs that were uploaded via AJAX
@@ -816,6 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
               hiddenInput.name = fieldName;
               hiddenInput.value = 'true';
               form.appendChild(hiddenInput);
+              console.log(`Added hidden field for AJAX upload: ${fieldName}`);
             }
             
             // Clear the file input to prevent double-upload
@@ -831,10 +790,103 @@ document.addEventListener('DOMContentLoaded', function() {
               fileNameInput.name = fileNameField;
               fileNameInput.value = input.dataset.originalFileName || 'File uploaded via AJAX';
               form.appendChild(fileNameInput);
+              console.log(`Added filename reference: ${fileNameField} = ${fileNameInput.value}`);
             }
           }
         });
       });
     }
   }
+
+  function setupServerSideValidation() {
+    console.log('Setting up server-side validation');
+    const form = document.getElementById('combinedUploadForm');
+    const submitButton = document.querySelector('button[name="complete_submission"]');
+    
+    if (!form || !submitButton) return;
+    
+    // Run validation before form submission
+    form.addEventListener('submit', function(e) {
+      if (e.submitter && e.submitter.name === 'submit_product') {
+        console.log('Submit button clicked, validating form with server');
+        e.preventDefault();
+        
+        // First check if there are active uploads
+        if (state.activeUploads > 0) {
+          showValidationErrors([
+            'Please wait for all uploads to complete before submitting'
+          ]);
+          return;
+        }
+        
+        // Get the product ID from the form action URL or a hidden field
+        const productId = document.getElementById('product-id').value;
+        
+        // Get the CSRF token
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        
+        // Perform AJAX validation
+        const validateUrl = document.getElementById('ajax-validate-url')?.value;
+        if (!validateUrl) {
+          console.error('Validation URL not found in hidden element');
+          form.submit(); // Fall back to standard form submission
+          return;
+        }
+        console.log(`Using validation URL: ${validateUrl}`);
+        fetch(validateUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+          },
+          body: new URLSearchParams(new FormData(form))
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Validation result:', data);
+          
+          if (data.valid) {
+            console.log('Form is valid, submitting');
+            form.submit();
+          } else {
+            showValidationErrors(data.errors);
+          }
+        })
+        .catch(error => {
+          console.error('Validation error:', error);
+          showValidationErrors(['An error occurred during validation. Please try again.']);
+        });
+      }
+    });
+    
+    function showValidationErrors(errors) {
+      // Remove any existing error containers
+      const existingErrors = form.querySelectorAll('.alert.alert-danger');
+      existingErrors.forEach(el => el.remove());
+      
+      // Create error container
+      const errorContainer = document.createElement('div');
+      errorContainer.className = 'alert alert-danger mb-4';
+      const errorList = document.createElement('ul');
+      errorList.className = 'mb-0';
+      
+      // Add each error
+      errors.forEach(error => {
+        const li = document.createElement('li');
+        li.textContent = error;
+        errorList.appendChild(li);
+      });
+      
+      errorContainer.appendChild(errorList);
+      
+      // Add to form
+      const firstCard = form.querySelector('.card-body');
+      firstCard.insertBefore(errorContainer, firstCard.firstChild);
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }  
+
+  setupServerSideValidation();
 });

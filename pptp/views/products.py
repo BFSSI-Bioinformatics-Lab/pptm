@@ -1,15 +1,17 @@
 # views/products.py
 from datetime import timedelta
 from django.views.generic import CreateView, UpdateView, TemplateView
+from django.db import transaction
 from django.db.models import Count, Q
 from django.urls import reverse_lazy
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 from django.contrib.auth.mixins import LoginRequiredMixin
+
 from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm, BarcodeUploadForm, NutritionFactsUploadForm, IngredientsUploadForm, ProductImageUploadForm
 
@@ -138,160 +140,140 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
     template_name = 'pptp/products/combined_upload.html'
     form_class = ProductSetupForm
 
-    def get_form(self, form_class=None):
-        """
-        Returns an instance of the form to be used in this view.
-        """
-        if form_class is None:
-            form_class = self.get_form_class()
-
-        return form_class(
-            self.request.POST if self.request.method == "POST" else None,
-            self.request.FILES if self.request.method == "POST" else None,
-            instance=self.get_object()
-        )
+    def get_object(self, queryset=None):
+        """Get product object with proper permission checks"""
+        obj = super().get_object(queryset)
+        # Additional permission checks could go here
+        return obj
 
     def get_context_data(self, **kwargs):
+        """Add data needed for the template"""
         context = super().get_context_data(**kwargs)
-
-        # Add all existing images
         product = self.get_object()
-        context['existing_barcodes'] = product.barcodes.all()
-        context['existing_nutrition_facts'] = product.nutrition_facts.all()
-        context['existing_ingredients'] = product.ingredients.all()
-
-        # Group product images by type for clearer display
-        product_images = product.product_images.all()
-        product_images_by_type = {
-            'front': product_images.filter(image_type='front'),
-            'back': product_images.filter(image_type='back'),
-            'side': product_images.filter(image_type='side'),
-            'other': product_images.filter(image_type='other'),
-        }
-        context['product_images_by_type'] = product_images_by_type
-
-        # Add empty forms for new uploads
-        context['barcode_form'] = BarcodeUploadForm()
-        context['nutrition_form'] = NutritionFactsUploadForm()
-        context['ingredients_form'] = IngredientsUploadForm()
-        context['product_image_form'] = ProductImageUploadForm()
-
-        # Add data for validation
-        context['validation_errors'] = self.get_validation_errors(product)
-
+        
+        # Group all existing images by type
+        context.update({
+            'existing_barcodes': product.barcodes.all(),
+            'existing_nutrition_facts': product.nutrition_facts.all(),
+            'existing_ingredients': product.ingredients.all(),
+            'product_images_by_type': {
+                'front': product.product_images.filter(image_type='front'),
+                'back': product.product_images.filter(image_type='back'),
+                'side': product.product_images.filter(image_type='side'),
+                'other': product.product_images.filter(image_type='other'),
+            },
+            # Add empty forms for new uploads
+            'barcode_form': BarcodeUploadForm(),
+            'nutrition_form': NutritionFactsUploadForm(),
+            'ingredients_form': IngredientsUploadForm(),
+            'product_image_form': ProductImageUploadForm(),
+            # Validation errors
+            'validation_errors': self.get_validation_errors(product)
+        })
+        
         return context
 
     def post(self, request, *args, **kwargs):
-        self.object = self.get_object()  # Set self.object explicitly
+        """Handle POST request with form submission or save action"""
+        self.object = self.get_object()
         form = self.get_form()
-
+        is_submit = 'submit_product' in request.POST
+        
         if form.is_valid():
-            self.object = form.save()  # Update self.object with saved instance
+            with transaction.atomic():
+                self.object = form.save()
+                self.process_uploads(request)
+                
+                if is_submit:
+                    errors = self.get_validation_errors(self.object)
+                    if errors:
+                        for error in errors:
+                            messages.error(request, error)
+                        return self.get(request, *args, **kwargs)
+                    
+                    # Mark submission as complete
+                    self.object.submission_complete = True
+                    self.object.save()
+                    messages.success(request, _("Product submission completed successfully!"))
+                    return redirect('products:dashboard')
+                    
+                messages.success(request, _("Changes saved successfully."))
         else:
             return self.form_invalid(form)
-
-        product = self.object
-        # Process image uploads
-        self.process_uploads(request, product)
-
-        # Check if the user clicked submit
-        if 'submit' in request.POST:
-            # Validate submission
-            errors = self.get_validation_errors(product)
-            if errors:
-                for error in errors:
-                    messages.error(request, error)
-                return self.get(request, *args, **kwargs)
-
-            # Mark submission as complete
-            product.submission_complete = True
-            product.save()
-            messages.success(request, _("Product submission completed successfully!"))
-            return redirect('products:dashboard')
-
-        # Default: stay on the same page with updates
-        messages.success(request, _("Changes saved successfully."))
+            
         return self.get(request, *args, **kwargs)
 
-    def process_uploads(self, request, product):
+    def process_uploads(self, request):
         """Process all file uploads from the form"""
-        # Helper function to save an upload
-        def save_upload(form_class, prefix, related_name):
-            # Look for regular and indexed form fields
-            regular_form = None
-            indexed_forms = []
-
-            # Check if already uploaded via AJAX
-            already_uploaded = request.POST.get(f'{prefix}-already_uploaded') == 'true'
-
-            # If already uploaded via AJAX, skip processing this file
-            if already_uploaded:
-                return True
-
-            # Check for regular upload
-            if any(request.FILES.get(f'{prefix}-{field}') for field in form_class().fields if field != 'notes'):
-                regular_form = form_class(request.POST, request.FILES, prefix=prefix)
-
-            # Check for indexed uploads (for multiple files)
-            index = 0
-            while True:
-                prefix_idx = f'{prefix}-{index}'
-                # Check if already uploaded via AJAX
-                already_uploaded_idx = request.POST.get(f'{prefix_idx}-already_uploaded') == 'true'
-
-                if already_uploaded_idx:
-                    # Skip this index as it was uploaded via AJAX
-                    index += 1
-                    continue
-
-                if any(request.FILES.get(f'{prefix_idx}-{field}') for field in form_class().fields if field != 'notes'):
-                    indexed_forms.append(form_class(request.POST, request.FILES, prefix=prefix_idx))
-                    index += 1
-                else:
-                    break
-
-            # Process regular form
-            if regular_form and regular_form.is_valid():
-                instance = regular_form.save(commit=False)
+        product = self.object
+        # For each file in request.FILES that's an image:
+        for field_name, file_obj in request.FILES.items():
+            if file_obj.content_type.startswith('image/'):
+                request.FILES[field_name] = optimize_image(file_obj)
+        # Helper to process each upload type
+        def process_upload(form_class, prefix, is_product_image=False, image_type=None):
+            # Skip if already handled by AJAX
+            if request.POST.get(f'{prefix}-already_uploaded') == 'true':
+                return
+                
+            # Process regular upload
+            has_file = request.FILES.get(f'{prefix}-image')
+            if not has_file:
+                return
+                
+            form = form_class(request.POST, request.FILES, prefix=prefix)
+            if form.is_valid():
+                instance = form.save(commit=False)
                 instance.product = product
                 instance.is_uploaded = True
+                
+                if is_product_image and image_type:
+                    instance.image_type = image_type
+                    
                 instance.save()
-
-            # Process indexed forms
-            for form in indexed_forms:
+        
+        # Process indexed uploads (for multiple files)
+        def process_indexed_uploads(form_class, base_prefix):
+            index = 0
+            while True:
+                prefix = f'{base_prefix}-{index}'
+                
+                # Skip if already handled by AJAX
+                if request.POST.get(f'{prefix}-already_uploaded') == 'true':
+                    index += 1
+                    continue
+                    
+                has_file = request.FILES.get(f'{prefix}-image')
+                if not has_file:
+                    break
+                    
+                form = form_class(request.POST, request.FILES, prefix=prefix)
                 if form.is_valid():
                     instance = form.save(commit=False)
                     instance.product = product
                     instance.is_uploaded = True
                     instance.save()
-
-            return bool(regular_form and regular_form.is_valid()) or any(form.is_valid() for form in indexed_forms)
-
-        # Process each upload type
-        upload_types = [
-            (BarcodeUploadForm, 'barcode', 'barcode_number'),
-            (NutritionFactsUploadForm, 'nutrition', None),
-            (IngredientsUploadForm, 'ingredients', None),
-        ]
-
-        for form_class, prefix, related_field in upload_types:
-            save_upload(form_class, prefix, related_field)
-
-        # Handle product images (multiple types)
-        image_types = ['front', 'back', 'side', 'other']
-        for image_type in image_types:
-            # Check if already uploaded via AJAX
-            already_uploaded = request.POST.get(f'image_{image_type}-already_uploaded') == 'true'
-
-            # If not already uploaded via AJAX, process form
-            if not already_uploaded:
-                form = ProductImageUploadForm(request.POST, request.FILES, prefix=f'image_{image_type}')
-                if form.is_valid() and request.FILES.get(f'image_{image_type}-image'):
-                    instance = form.save(commit=False)
-                    instance.product = product
-                    instance.image_type = image_type
-                    instance.is_uploaded = True
-                    instance.save()
+                
+                index += 1
+        
+        # Process main upload types
+        process_upload(BarcodeUploadForm, 'barcode')
+        process_upload(NutritionFactsUploadForm, 'nutrition')
+        process_upload(IngredientsUploadForm, 'ingredients')
+        
+        # Process indexed uploads for multiple items
+        process_indexed_uploads(BarcodeUploadForm, 'barcode')
+        process_indexed_uploads(NutritionFactsUploadForm, 'nutrition')
+        process_indexed_uploads(IngredientsUploadForm, 'ingredients')
+        
+        # Process product images (different types)
+        for image_type in ['front', 'back', 'side', 'other']:
+            process_upload(
+                ProductImageUploadForm, 
+                f'image_{image_type}', 
+                is_product_image=True,
+                image_type=image_type
+            )
 
     def get_validation_errors(self, product):
         """Check all requirements and return list of validation errors"""
@@ -300,6 +282,8 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
         # Check product name
         if not product.product_name:
             errors.append(_("Product name is required"))
+        elif len(product.product_name.split()) < 2:
+            errors.append(_("Please enter the full product name (at least two words)"))
 
         # Check barcodes
         if not product.barcodes.exists():
@@ -330,6 +314,7 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
 
 
 @require_POST
+@transaction.atomic
 def ajax_upload_image(request, pk):
     """Handle AJAX image uploads from drag and drop functionality"""
     if 'file' not in request.FILES:
@@ -337,18 +322,15 @@ def ajax_upload_image(request, pk):
 
     file_obj = request.FILES['file']
     image_type = request.POST.get('image_type')
-    notes = request.POST.get('notes', '')
-
+    
     if not image_type:
         return JsonResponse({'success': False, 'error': _("No image type specified")})
 
     try:
-        product = Product.objects.get(pk=pk)
-    except Product.DoesNotExist:
-        return JsonResponse({'success': False, 'error': _("Product not found")})
-
-    try:
-        # Create the appropriate type of image
+        product = get_object_or_404(Product, pk=pk)
+        notes = request.POST.get('notes', '')
+        
+        # Create the appropriate type of image based on image_type
         if image_type == 'barcode':
             barcode_number = request.POST.get('barcode_number', '')
             image = Barcode.objects.create(
@@ -392,3 +374,33 @@ def ajax_upload_image(request, pk):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_POST
+def validate_product_submission(request, pk):
+    """
+    AJAX endpoint to validate product submission before final submission
+    Returns errors as JSON that can be displayed to the user
+    """
+
+    try:
+        product = Product.objects.get(pk=pk)
+
+        view = CombinedUploadView()
+        errors = view.get_validation_errors(product)
+
+        return JsonResponse({
+            'valid': len(errors) == 0,
+            'errors': errors
+        })
+
+    except Product.DoesNotExist:
+        return JsonResponse({
+            'valid': False,
+            'errors': [_("Product not found")]
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'valid': False,
+            'errors': [str(e)]
+        }, status=500)
