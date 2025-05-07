@@ -643,158 +643,74 @@ document.addEventListener('DOMContentLoaded', function() {
   function setupFormSubmissionHandling() {
     console.log('Setting up form submission handling');
     const form = document.getElementById('combinedUploadForm');
-    
+
     if (form) {
-      form.addEventListener('submit', function(e) {
-        // Handle validation
-        if (e.submitter && e.submitter.name === 'submit') {
-          let hasErrors = false;
-          const errorContainer = document.createElement('div');
-          errorContainer.className = 'alert alert-danger mb-4';
-          const errorList = document.createElement('ul');
-          errorList.className = 'mb-0';
-          errorContainer.appendChild(errorList);
+      form.addEventListener('submit', function (e) {
+        if (e.submitter && e.submitter.name === 'submit_product') {
+          e.preventDefault();
 
-          // Remove any existing error containers
-          const existingErrors = form.querySelectorAll('.alert.alert-danger');
-          existingErrors.forEach(el => el.remove());
-
+          // Basic client-side validation (minimal)
           const productName = document.querySelector('input[name="product_name"]').value.trim();
-
           if (!productName) {
-            hasErrors = true;
-            const li = document.createElement('li');
-            li.textContent = 'Product name is required';
-            errorList.appendChild(li);
-          } else if (productName.split(/\s+/).length < 2) {
-            hasErrors = true;
-            const li = document.createElement('li');
-            li.textContent = 'Please enter the full product name (at least two words)';
-            errorList.appendChild(li);
-          }
-
-          // Check for active uploads
-          if (state.activeUploads > 0) {
-            hasErrors = true;
-            const li = document.createElement('li');
-            li.textContent = 'Please wait for all uploads to complete before submitting';
-            errorList.appendChild(li);
-          }
-
-          // Check required files
-          const requiredTypes = {
-            'front': 'Front of package',
-            'back': 'Back of package',
-            'barcode': 'Barcode',
-            'nutrition': 'Nutrition facts',
-            'ingredients': 'Ingredients'
-          };
-          
-          const missingTypes = [];
-          
-          for (const [type, label] of Object.entries(requiredTypes)) {
-            let found = false;
-            
-            if (type === 'front' || type === 'back') {
-              found = !!document.querySelector(`.existing-image img[alt="${type} image"]`) || 
-                     !!document.querySelector(`[name="image_${type}-image"]`).files.length;
-            } else {
-              found = !!document.querySelector(`.existing-image img[alt="${label}"]`) || 
-                     !!document.querySelector(`[name="${type}-image"]`).files.length;
-            }
-            
-            if (!found) {
-              missingTypes.push(label);
-            }
-          }
-          
-          if (missingTypes.length > 0) {
-            hasErrors = true;
-            const li = document.createElement('li');
-            li.textContent = `Missing required images: ${missingTypes.join(', ')}`;
-            errorList.appendChild(li);
-          }
-
-          // Check multiple barcodes if needed
-          const hasMultipleBarcodes = document.getElementById('id_has_multiple_barcodes').checked;
-          if (hasMultipleBarcodes) {
-            const barcodeCount = document.querySelectorAll('.existing-image img[alt="Barcode"]').length + 
-                               document.querySelectorAll('.barcode-upload input[type="file"]').length;
-            
-            if (barcodeCount < 2) {
-              hasErrors = true;
-              const li = document.createElement('li');
-              li.textContent = 'Multiple barcodes were indicated but not all were uploaded';
-              errorList.appendChild(li);
-            }
-          }
-          
-          // Check multiple nutrition facts if needed
-          const hasMultipleNutrition = document.getElementById('id_has_multiple_nutrition_facts').checked;
-          if (hasMultipleNutrition) {
-            const nutritionCount = document.querySelectorAll('.existing-image img[alt="Nutrition Facts"]').length + 
-                                 document.querySelectorAll('.nutrition-upload input[type="file"]').length;
-            
-            if (nutritionCount < 2) {
-              hasErrors = true;
-              const li = document.createElement('li');
-              li.textContent = 'Multiple nutrition facts were indicated but not all were uploaded';
-              errorList.appendChild(li);
-            }
-          }
-
-          if (hasErrors) {
-            console.warn('Form validation failed', errorList.innerHTML);
-            e.preventDefault();
-            const firstCard = form.querySelector('.card-body');
-            firstCard.insertBefore(errorContainer, firstCard.firstChild);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showError('Product name is required');
             return;
           }
-          
-          console.log('Form validation passed, preparing for submission');
+
+          // Server-side validation
+          const validateUrl = document.getElementById('ajax-validate-url').value;
+          const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+          fetch(validateUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': csrfToken
+            },
+            body: new FormData(form)
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data.valid) {
+                form.submit();
+              } else {
+                showErrors(data.errors);
+              }
+            })
+            .catch(error => {
+              showError('An error occurred during validation. Please try again.');
+            });
         }
-        
-        // Process file inputs that were uploaded via AJAX
-        const fileInputs = form.querySelectorAll('input[type="file"]');
-        fileInputs.forEach(input => {
-          const container = input.closest('.card-body');
-          if (!container) return;
-          
-          const progressUI = container.querySelector('.upload-progress');
-          
-          if (progressUI) {
-            // Add hidden input to indicate this file was uploaded via AJAX
-            const fieldName = input.name.replace('-image', '-already_uploaded');
-            let hiddenInput = form.querySelector(`input[name="${fieldName}"]`);
-            
-            if (!hiddenInput) {
-              hiddenInput = document.createElement('input');
-              hiddenInput.type = 'hidden';
-              hiddenInput.name = fieldName;
-              hiddenInput.value = 'true';
-              form.appendChild(hiddenInput);
-              console.log(`Added hidden field for AJAX upload: ${fieldName}`);
-            }
-            
-            // Clear the file input to prevent double-upload
-            input.value = '';
-            
-            // Add the original filename for reference
-            const fileNameField = input.name.replace('-image', '-ajax_filename');
-            let fileNameInput = form.querySelector(`input[name="${fileNameField}"]`);
-            
-            if (!fileNameInput) {
-              fileNameInput = document.createElement('input');
-              fileNameInput.type = 'hidden';
-              fileNameInput.name = fileNameField;
-              fileNameInput.value = input.dataset.originalFileName || 'File uploaded via AJAX';
-              form.appendChild(fileNameInput);
-              console.log(`Added filename reference: ${fileNameField} = ${fileNameInput.value}`);
-            }
-          }
-        });
       });
+    }
+
+    function showError(message) {
+      showErrors([message]);
+    }
+
+    function showErrors(errors) {
+      const errorContainer = document.createElement('div');
+      errorContainer.className = 'alert alert-danger mb-4';
+
+      const errorList = document.createElement('ul');
+      errorList.className = 'mb-0';
+
+      errors.forEach(error => {
+        const li = document.createElement('li');
+        li.textContent = error;
+        errorList.appendChild(li);
+      });
+
+      errorContainer.appendChild(errorList);
+
+      // Remove existing error containers
+      const existingErrors = form.querySelectorAll('.alert.alert-danger');
+      existingErrors.forEach(el => el.remove());
+
+      // Add to form
+      const firstCard = form.querySelector('.card-body');
+      firstCard.insertBefore(errorContainer, firstCard.firstChild);
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 

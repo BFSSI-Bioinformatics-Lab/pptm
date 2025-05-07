@@ -206,10 +206,7 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
     def process_uploads(self, request):
         """Process all file uploads from the form"""
         product = self.object
-        # For each file in request.FILES that's an image:
-        for field_name, file_obj in request.FILES.items():
-            if file_obj.content_type.startswith('image/'):
-                request.FILES[field_name] = optimize_image(file_obj)
+        
         # Helper to process each upload type
         def process_upload(form_class, prefix, is_product_image=False, image_type=None):
             # Skip if already handled by AJAX
