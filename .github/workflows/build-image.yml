@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - docker
+      - simplify_upload
     tags:
       - 'v*'
 
