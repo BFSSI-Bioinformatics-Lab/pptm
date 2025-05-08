@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeFormValidation();
 
   // Initialize form submission handling
-  setupFormSubmissionHandling();
+  setupFormSubmission();
 
   // FUNCTION DEFINITIONS
   function setupMultipleUploadCheckboxes() {
@@ -527,6 +527,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const container = fileInput.closest('.card-body');
       if (!container) return;
+
+      const hiddenField = document.createElement('input');
+      hiddenField.type = 'hidden';
+      hiddenField.name = `${result.formPrefix}-already_uploaded`;
+      hiddenField.value = 'true';
+      container.appendChild(hiddenField);
       
       const statusDiv = container.querySelector('.upload-status');
       const progressUI = container.querySelector('.upload-progress');
@@ -640,26 +646,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  function setupFormSubmissionHandling() {
+  function setupFormSubmission() {
     console.log('Setting up form submission handling');
     const form = document.getElementById('combinedUploadForm');
-
+  
     if (form) {
-      form.addEventListener('submit', function (e) {
+      form.addEventListener('submit', function(e) {
         if (e.submitter && e.submitter.name === 'submit_product') {
           e.preventDefault();
-
-          // Basic client-side validation (minimal)
-          const productName = document.querySelector('input[name="product_name"]').value.trim();
-          if (!productName) {
-            showError('Product name is required');
+          
+          // Check for active uploads
+          if (state.activeUploads > 0) {
+            showValidationErrors(['Please wait for all uploads to complete before submitting']);
             return;
           }
-
+          
+          // Basic client-side validation
+          const productName = document.querySelector('input[name="product_name"]').value.trim();
+          if (!productName) {
+            showValidationErrors(['Product name is required']);
+            return;
+          }
+          
           // Server-side validation
           const validateUrl = document.getElementById('ajax-validate-url').value;
+          if (!validateUrl) {
+            console.error('Validation URL not found');
+            form.submit(); // Fall back to standard submission
+            return;
+          }
+          
           const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-
+          
           fetch(validateUrl, {
             method: 'POST',
             headers: {
@@ -667,114 +685,21 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: new FormData(form)
           })
-            .then(response => response.json())
-            .then(data => {
-              if (data.valid) {
-                form.submit();
-              } else {
-                showErrors(data.errors);
-              }
-            })
-            .catch(error => {
-              showError('An error occurred during validation. Please try again.');
-            });
+          .then(response => response.json())
+          .then(data => {
+            if (data.valid) {
+              form.submit();
+            } else {
+              showValidationErrors(data.errors);
+            }
+          })
+          .catch(error => {
+            showValidationErrors(['An error occurred during validation. Please try again.']);
+          });
         }
       });
     }
 
-    function showError(message) {
-      showErrors([message]);
-    }
-
-    function showErrors(errors) {
-      const errorContainer = document.createElement('div');
-      errorContainer.className = 'alert alert-danger mb-4';
-
-      const errorList = document.createElement('ul');
-      errorList.className = 'mb-0';
-
-      errors.forEach(error => {
-        const li = document.createElement('li');
-        li.textContent = error;
-        errorList.appendChild(li);
-      });
-
-      errorContainer.appendChild(errorList);
-
-      // Remove existing error containers
-      const existingErrors = form.querySelectorAll('.alert.alert-danger');
-      existingErrors.forEach(el => el.remove());
-
-      // Add to form
-      const firstCard = form.querySelector('.card-body');
-      firstCard.insertBefore(errorContainer, firstCard.firstChild);
-
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  function setupServerSideValidation() {
-    console.log('Setting up server-side validation');
-    const form = document.getElementById('combinedUploadForm');
-    const submitButton = document.querySelector('button[name="complete_submission"]');
-    
-    if (!form || !submitButton) return;
-    
-    // Run validation before form submission
-    form.addEventListener('submit', function(e) {
-      if (e.submitter && e.submitter.name === 'submit_product') {
-        console.log('Submit button clicked, validating form with server');
-        e.preventDefault();
-        
-        // First check if there are active uploads
-        if (state.activeUploads > 0) {
-          showValidationErrors([
-            'Please wait for all uploads to complete before submitting'
-          ]);
-          return;
-        }
-        
-        // Get the product ID from the form action URL or a hidden field
-        const productId = document.getElementById('product-id').value;
-        
-        // Get the CSRF token
-        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
-        
-        // Perform AJAX validation
-        const validateUrl = document.getElementById('ajax-validate-url')?.value;
-        if (!validateUrl) {
-          console.error('Validation URL not found in hidden element');
-          form.submit(); // Fall back to standard form submission
-          return;
-        }
-        console.log(`Using validation URL: ${validateUrl}`);
-        fetch(validateUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrfToken
-          },
-          body: new URLSearchParams(new FormData(form))
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Validation result:', data);
-          
-          if (data.valid) {
-            console.log('Form is valid, submitting');
-            form.submit();
-          } else {
-            showValidationErrors(data.errors);
-          }
-        })
-        .catch(error => {
-          console.error('Validation error:', error);
-          showValidationErrors(['An error occurred during validation. Please try again.']);
-        });
-      }
-    });
-    
     function showValidationErrors(errors) {
       // Remove any existing error containers
       const existingErrors = form.querySelectorAll('.alert.alert-danger');
@@ -802,7 +727,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }  
+  }
 
-  setupServerSideValidation();
+
+  
 });
