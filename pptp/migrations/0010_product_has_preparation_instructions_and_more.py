@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
             name="is_individually_packaged",
             field=models.BooleanField(
                 default=False,
-                help_text="Check if this is multiple individually wrapped items. The important thing is if there is a physical wrapper around each individual object. It affects how the reference amount is applied.",
+                help_text="Check if this is multiple individually wrapped items, e.g. granola bars",
             ),
         ),
         migrations.AlterField(
