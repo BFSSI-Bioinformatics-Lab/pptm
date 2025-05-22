@@ -1,10 +1,10 @@
 # views/products.py
 from datetime import timedelta
-from django.views.generic import CreateView, UpdateView, TemplateView
+from django.views.generic import View, UpdateView, TemplateView
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.urls import reverse_lazy
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
@@ -113,110 +113,138 @@ class ProductSetupView(BaseProductStepView, UpdateView):
         return reverse_lazy('products:barcode_upload', kwargs={'pk': self.object.pk})
 
 
-class ProductSubmissionStartView(LoginRequiredMixin, CreateView):
-    model = Product
-    fields = []
-    template_name = 'pptp/products/submission_start.html'
-    view_step = 'start'  # Define the step directly here
-
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy('products:combined_upload', kwargs={'pk': self.object.pk})
-
-    def get_context_data(self, **kwargs):
-        # Call CreateView's get_context_data directly
-        context = super().get_context_data(**kwargs)
-        # Add the view_step manually
-        context['view_step'] = self.view_step
-        return context
-
-
-class CombinedUploadView(LoginRequiredMixin, UpdateView):
+class CombinedUploadView(LoginRequiredMixin, View):
     """A single page that combines all the upload steps with enhanced drag-and-drop functionality"""
-    model = Product
     template_name = 'pptp/products/combined_upload.html'
-    form_class = ProductSetupForm
 
-    def get_object(self, queryset=None):
-        """Get product object with proper permission checks"""
-        obj = super().get_object(queryset)
-        # Additional permission checks could go here
-        return obj
+    def get(self, request, pk=None):
+        if pk:
+            # Editing existing product
+            product = get_object_or_404(Product, pk=pk)
+            form = ProductSetupForm(instance=product)
+            is_editing = True
+        else:
+            # Creating new product - create it immediately so we have an ID for AJAX
+            product = Product.objects.create(
+                created_by=request.user.username,
+                product_name="",  # Will be filled in by form
+            )
+            # Redirect to edit URL so we have a proper ID
+            return redirect('products:combined_upload_edit', pk=product.pk)
 
-    def get_context_data(self, **kwargs):
-        """Add data needed for the template"""
-        context = super().get_context_data(**kwargs)
-        product = self.get_object()
-        
-        # Group all existing images by type
+        context = self.get_context_data(product, form, is_editing)
+        return render(request, self.template_name, context) 
+
+    def post(self, request, pk=None):
+        if pk:
+            product = get_object_or_404(Product, pk=pk)
+            form = ProductSetupForm(request.POST, instance=product)
+            is_editing = True
+        else:
+            form = ProductSetupForm(request.POST)
+            product = None
+            is_editing = False
+
+        is_submit = 'submit_product' in request.POST
+
+        if form.is_valid():
+            with transaction.atomic():
+                if not is_editing:
+                    form.instance.created_by = request.user.username
+
+                product = form.save()
+                upload_errors = self.process_uploads(request, product)
+
+                if upload_errors:
+                    for error in upload_errors:
+                        messages.error(request, error)
+                    context = self.get_context_data(product, form, is_editing)
+                    return render(request, self.template_name, context)
+
+                if is_submit:
+                    validation_errors = self.get_validation_errors(product)
+                    if validation_errors:
+                        for error in validation_errors:
+                            messages.error(request, error)
+                        context = self.get_context_data(product, form, is_editing)
+                        return render(request, self.template_name, context)
+
+                    product.submission_complete = True
+                    product.save()
+                    messages.success(request, _("Product submission completed successfully!"))
+                    return redirect('products:dashboard')
+
+                if is_editing:
+                    messages.success(request, _("Product updated successfully."))
+                else:
+                    messages.success(request, _("Product created and saved successfully."))
+
+                return redirect('products:combined_upload_edit', pk=product.pk)
+
+        else:
+            if product:
+                try:
+                    self.process_uploads(request, product)
+                except:
+                    pass
+
+            messages.error(request, _("Please correct the errors below."))
+            context = self.get_context_data(product, form, is_editing)
+            return render(request, self.template_name, context)
+
+    def get_context_data(self, product, form, is_editing):
+        """Build context data for the template"""
+        context = {
+            'product': product,
+            'form': form,
+            'is_editing': is_editing,
+            'view_step': 'combined_upload'
+        }
+
+        if product:
+            context.update({
+                'existing_barcodes': product.barcodes.all(),
+                'existing_nutrition_facts': product.nutrition_facts.all(),
+                'existing_ingredients': product.ingredients.all(),
+                'product_images_by_type': {
+                    'front': product.product_images.filter(image_type='front'),
+                    'back': product.product_images.filter(image_type='back'),
+                    'side': product.product_images.filter(image_type='side'),
+                    'other': product.product_images.filter(image_type='other'),
+                },
+                'validation_errors': self.get_validation_errors(product)
+            })
+        else:
+            context.update({
+                'existing_barcodes': [],
+                'existing_nutrition_facts': [],
+                'existing_ingredients': [],
+                'product_images_by_type': {
+                    'front': [], 'back': [], 'side': [], 'other': []
+                },
+                'validation_errors': []
+            })
+
         context.update({
-            'existing_barcodes': product.barcodes.all(),
-            'existing_nutrition_facts': product.nutrition_facts.all(),
-            'existing_ingredients': product.ingredients.all(),
-            'product_images_by_type': {
-                'front': product.product_images.filter(image_type='front'),
-                'back': product.product_images.filter(image_type='back'),
-                'side': product.product_images.filter(image_type='side'),
-                'other': product.product_images.filter(image_type='other'),
-            },
-            # Add empty forms for new uploads
             'barcode_form': BarcodeUploadForm(),
             'nutrition_form': NutritionFactsUploadForm(),
             'ingredients_form': IngredientsUploadForm(),
             'product_image_form': ProductImageUploadForm(),
-            # Validation errors
-            'validation_errors': self.get_validation_errors(product)
         })
-        
+
         return context
-
-    def post(self, request, *args, **kwargs):
-        """Handle POST request with form submission or save action"""
-        self.object = self.get_object()
-        form = self.get_form()
-        is_submit = 'submit_product' in request.POST
+    
+    def process_uploads(self, request, product):
+        """Process all file uploads from the form, return list of errors"""
+        errors = []
         
-        if form.is_valid():
-            with transaction.atomic():
-                self.object = form.save()
-                self.process_uploads(request)
-                
-                if is_submit:
-                    errors = self.get_validation_errors(self.object)
-                    if errors:
-                        for error in errors:
-                            messages.error(request, error)
-                        return self.get(request, *args, **kwargs)
-                    
-                    # Mark submission as complete
-                    self.object.submission_complete = True
-                    self.object.save()
-                    messages.success(request, _("Product submission completed successfully!"))
-                    return redirect('products:dashboard')
-                    
-                messages.success(request, _("Changes saved successfully."))
-        else:
-            return self.form_invalid(form)
-            
-        return self.get(request, *args, **kwargs)
-
-    def process_uploads(self, request):
-        """Process all file uploads from the form"""
-        product = self.object
-        
-        # Helper to process each upload type
         def process_upload(form_class, prefix, is_product_image=False, image_type=None):
-            # Skip if already handled by AJAX
             if request.POST.get(f'{prefix}-already_uploaded') == 'true':
-                return
+                return None
                 
-            # Process regular upload
             has_file = request.FILES.get(f'{prefix}-image')
             if not has_file:
-                return
+                return None
                 
             form = form_class(request.POST, request.FILES, prefix=prefix)
             if form.is_valid():
@@ -228,14 +256,15 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
                     instance.image_type = image_type
                     
                 instance.save()
+                return None
+            else:
+                return f"Error uploading {prefix}: {form.errors}"
         
-        # Process indexed uploads (for multiple files)
         def process_indexed_uploads(form_class, base_prefix):
             index = 0
             while True:
                 prefix = f'{base_prefix}-{index}'
                 
-                # Skip if already handled by AJAX
                 if request.POST.get(f'{prefix}-already_uploaded') == 'true':
                     index += 1
                     continue
@@ -250,55 +279,58 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
                     instance.product = product
                     instance.is_uploaded = True
                     instance.save()
+                else:
+                    errors.append(f"Error uploading {prefix}: {form.errors}")
                 
                 index += 1
         
-        # Process main upload types
-        process_upload(BarcodeUploadForm, 'barcode')
-        process_upload(NutritionFactsUploadForm, 'nutrition')
-        process_upload(IngredientsUploadForm, 'ingredients')
+        for form_class, prefix in [
+            (BarcodeUploadForm, 'barcode'),
+            (NutritionFactsUploadForm, 'nutrition'),
+            (IngredientsUploadForm, 'ingredients')
+        ]:
+            error = process_upload(form_class, prefix)
+            if error:
+                errors.append(error)
         
-        # Process indexed uploads for multiple items
         process_indexed_uploads(BarcodeUploadForm, 'barcode')
         process_indexed_uploads(NutritionFactsUploadForm, 'nutrition')
         process_indexed_uploads(IngredientsUploadForm, 'ingredients')
         
-        # Process product images (different types)
         for image_type in ['front', 'back', 'side', 'other']:
-            process_upload(
+            error = process_upload(
                 ProductImageUploadForm, 
                 f'image_{image_type}', 
                 is_product_image=True,
                 image_type=image_type
             )
+            if error:
+                errors.append(error)
+                
+        return errors
 
     def get_validation_errors(self, product):
         """Check all requirements and return list of validation errors"""
         errors = []
 
-        # Check product name
         if not product.product_name:
             errors.append(_("Product name is required"))
         elif len(product.product_name.split()) < 2:
             errors.append(_("Please enter the full product name (at least two words)"))
 
-        # Check barcodes
         if not product.barcodes.exists():
             errors.append(_("At least one barcode image is required"))
         elif product.has_multiple_barcodes and product.barcodes.count() < 2:
             errors.append(_("Multiple barcodes were indicated but not all were uploaded"))
 
-        # Check nutrition facts
         if not product.nutrition_facts.exists():
             errors.append(_("At least one nutrition facts image is required"))
         elif product.has_multiple_nutrition_facts and product.nutrition_facts.count() < 2:
             errors.append(_("Multiple nutrition facts were indicated but not all were uploaded"))
 
-        # Check ingredients
         if not product.ingredients.exists():
             errors.append(_("At least one ingredients image is required"))
 
-        # Check product images
         required_types = {'front', 'back'}
         existing_types = set(product.product_images.values_list('image_type', flat=True))
         missing_types = required_types - existing_types
@@ -308,7 +340,6 @@ class CombinedUploadView(LoginRequiredMixin, UpdateView):
             errors.append(_("Missing required product images: %s") % ", ".join(missing_types_display))
 
         return errors
-
 
 @require_POST
 @transaction.atomic

@@ -26,7 +26,6 @@ class BaseUploadForm(forms.ModelForm):
                     'placeholder': _('Notes (optional)')
                 })
 
-
 class ProductSetupForm(forms.ModelForm):
     """Form for basic product setup information"""
     
@@ -34,6 +33,8 @@ class ProductSetupForm(forms.ModelForm):
         model = Product
         fields = [
             'product_name',
+            'package_size',
+            'package_size_unit',
             'is_supplemented_food',
             'is_variety_pack',
             'is_individually_packaged',
@@ -47,6 +48,15 @@ class ProductSetupForm(forms.ModelForm):
             'product_name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': _('Enter complete product name as shown on packaging')
+            }),
+            'package_size': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': _('Enter package size (number only)'),
+                'step': '0.01',
+                'min': '0'
+            }),
+            'package_size_unit': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'is_supplemented_food': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_variety_pack': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
