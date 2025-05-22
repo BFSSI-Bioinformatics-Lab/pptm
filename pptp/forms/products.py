@@ -41,6 +41,7 @@ class ProductSetupForm(forms.ModelForm):
             'has_front_of_pack_label',
             'has_multiple_nutrition_facts',
             'has_multiple_barcodes',
+            'needs_manual_verification',
         ]
         widgets = {
             'product_name': forms.TextInput(attrs={
@@ -54,6 +55,7 @@ class ProductSetupForm(forms.ModelForm):
             'has_front_of_pack_label': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_multiple_nutrition_facts': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_multiple_barcodes': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'needs_manual_verification': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def clean_product_name(self):

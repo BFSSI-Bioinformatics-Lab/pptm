@@ -53,7 +53,7 @@ class Product(models.Model):
     )
     is_individually_packaged = models.BooleanField(
         default=False,
-        help_text=_("Check if this is multiple individually wrapped items, e.g. granola bars")
+        help_text=_("Check if this is multiple individually wrapped items. The important thing is if there is a physical wrapper around each individual object. It affects how the reference amount is applied")
     )
     has_preparation_instructions = models.BooleanField(
         default=False,
@@ -70,6 +70,10 @@ class Product(models.Model):
     has_multiple_barcodes = models.BooleanField(
         default=False,
         help_text=_("Check if product has multiple barcodes")
+    )
+    needs_manual_verification = models.BooleanField(
+        default=False,
+        help_text=_("Product is difficult to photograph clearly or otherwise classify, flag for manual verification")
     )
 
     class Meta:
