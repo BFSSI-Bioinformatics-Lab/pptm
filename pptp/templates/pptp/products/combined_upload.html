@@ -95,8 +95,14 @@
                   </label>
                   <div class="form-text">Product is difficult to photograph clearly or otherwise classify, flag for manual verification</div>
               </div>
+              <div class="form-check">
+                {{ form.is_supplemented_food }}
+                <label class="form-check-label" for="{{ form.is_supplemented_food.id_for_label }}">
+                  {{ form.is_supplemented_food.label }}
+                </label>
+              </div>
             </div>
-            
+
             <!-- Required Uploads Section -->
             <h2 class="h4 section-heading first-section-heading">Required Images</h2>
             
@@ -304,12 +310,6 @@
                     </div>
                   </div>
                   <div class="card-footer-form">
-                    <div class="form-check">
-                      {{ form.is_supplemented_food }}
-                      <label class="form-check-label" for="{{ form.is_supplemented_food.id_for_label }}">
-                        {{ form.is_supplemented_food.label }}
-                      </label>
-                    </div>
                   </div>
                 </div>
               </div>
