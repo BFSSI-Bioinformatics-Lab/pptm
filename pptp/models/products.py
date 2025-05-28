@@ -5,8 +5,16 @@ from django.core.exceptions import ValidationError
 from ..storage.azure import AzureBlobStorage, AzureBlobStorageError
 
 
-User = get_user_model() # TODO: fix this to be the datahub user
+User = get_user_model()
 
+UNIT_CHOICES = [
+    ("MG", "Milligrams"),
+    ("G", "Grams"),
+    ("KG", "Kilograms"),
+    ("ML", "Millilitres"),
+    ("L", "Litres"),
+    ("OTH", "Other"),
+]
 
 def get_upload_path(instance, filename):
     model_name = instance.__class__.__name__.lower()
@@ -43,6 +51,19 @@ class Product(models.Model):
         help_text=_("Full product name as shown on packaging")
     )
 
+    package_size = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        default=0.00,
+        help_text=_("Number for the total package size")
+    )
+    package_size_unit = models.CharField(
+        choices=UNIT_CHOICES,
+        max_length=3,
+        default="OTH",
+        help_text=_("Unit for the total package size")
+    )
+
     is_variety_pack = models.BooleanField(
         default=False,
         help_text=_("Check if this is a variety/multi-pack product")
@@ -53,7 +74,7 @@ class Product(models.Model):
     )
     is_individually_packaged = models.BooleanField(
         default=False,
-        help_text=_("Check if this is multiple individually wrapped items, e.g. granola bars")
+        help_text=_("Check if this is multiple individually wrapped items. The important thing is if there is a physical wrapper around each individual object. It affects how the reference amount is applied")
     )
     has_preparation_instructions = models.BooleanField(
         default=False,
@@ -70,6 +91,10 @@ class Product(models.Model):
     has_multiple_barcodes = models.BooleanField(
         default=False,
         help_text=_("Check if product has multiple barcodes")
+    )
+    needs_manual_verification = models.BooleanField(
+        default=False,
+        help_text=_("Product is difficult to photograph clearly or otherwise classify, flag for manual verification")
     )
 
     class Meta:
