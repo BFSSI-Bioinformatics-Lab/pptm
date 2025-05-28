@@ -518,82 +518,88 @@ document.addEventListener('DOMContentLoaded', function() {
       statusDiv.textContent = `Uploading: ${percentage}%`;
     }
   }
-
+  
   function showCompletionStatus(results) {
     results.forEach(result => {
-      const inputSelector = `[name="${result.formPrefix}-image"]`;
-      const fileInput = document.querySelector(inputSelector);
-      if (!fileInput) return;
-      
-      const container = fileInput.closest('.card-body');
-      if (!container) return;
-
-      const hiddenField = document.createElement('input');
-      hiddenField.type = 'hidden';
-      hiddenField.name = `${result.formPrefix}-already_uploaded`;
-      hiddenField.value = 'true';
-      container.appendChild(hiddenField);
-      
-      const statusDiv = container.querySelector('.upload-status');
-      const progressUI = container.querySelector('.upload-progress');
-      
-      if (result.success) {
-        console.log(`Showing success UI for ${result.formPrefix}`);
-        if (statusDiv) {
-          statusDiv.textContent = 'Upload complete!';
-          statusDiv.classList.add('text-success');
-        }
+        const inputSelector = `[name="${result.formPrefix}-image"]`;
+        const fileInput = document.querySelector(inputSelector);
+        if (!fileInput) return;
         
-        if (progressUI) {
-          const successDiv = document.createElement('div');
-          successDiv.className = 'mt-2 d-flex justify-content-between align-items-center';
-          successDiv.innerHTML = `
-            <span class="text-success"><i class="bi bi-check-circle"></i> Upload successful</span>
-            <button type="button" class="btn btn-sm btn-outline-primary refresh-btn">
-              <i class="bi bi-arrow-clockwise"></i> Refresh Page
-            </button>
-          `;
-          progressUI.appendChild(successDiv);
-          
-          const refreshBtn = successDiv.querySelector('.refresh-btn');
-          if (refreshBtn) {
-            refreshBtn.addEventListener('click', function() {
-              window.location.reload();
-            });
-          }
-        }
-      } else {
-        console.log(`Showing error UI for ${result.formPrefix}: ${result.error}`);
-        if (statusDiv) {
-          statusDiv.textContent = `Error: ${result.error}`;
-          statusDiv.classList.add('text-danger');
-        }
+        const container = fileInput.closest('.card-body');
+        if (!container) return;
         
-        if (progressUI) {
-          const errorDiv = document.createElement('div');
-          errorDiv.className = 'mt-2';
-          errorDiv.innerHTML = `
-            <button type="button" class="btn btn-sm btn-outline-danger retry-btn">
-              <i class="bi bi-arrow-repeat"></i> Retry
-            </button>
-          `;
-          progressUI.appendChild(errorDiv);
-          
-          const retryBtn = errorDiv.querySelector('.retry-btn');
-          if (retryBtn) {
-            retryBtn.addEventListener('click', function() {
-              console.log(`Retry clicked for ${result.formPrefix}`);
-              fileInput.value = '';
-              if (progressUI) {
-                progressUI.remove();
-              }
-            });
-          }
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = `${result.formPrefix}-already_uploaded`;
+        hiddenField.value = 'true';
+        container.appendChild(hiddenField);
+        
+        const statusDiv = container.querySelector('.upload-status');
+        const progressUI = container.querySelector('.upload-progress');
+        
+        if (result.success) {
+            console.log(`Showing success UI for ${result.formPrefix}`);
+            if (statusDiv) {
+                statusDiv.textContent = 'Upload complete!';
+                statusDiv.classList.add('text-success');
+            }
+            
+            if (progressUI) {
+                let existingSuccess = progressUI.querySelector('.upload-success-message');
+                if (!existingSuccess) {
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'upload-success-message mt-2 d-flex justify-content-between align-items-center';
+                    successDiv.innerHTML = `
+                        <span class="text-success"><i class="bi bi-check-circle"></i> Upload successful</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary refresh-btn">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                        </button>
+                    `;
+                    progressUI.appendChild(successDiv);
+                    
+                    const refreshBtn = successDiv.querySelector('.refresh-btn');
+                    if (refreshBtn) {
+                        refreshBtn.addEventListener('click', function() {
+                            window.location.reload();
+                        });
+                    }
+                }
+            }
+        } else {
+            console.log(`Showing error UI for ${result.formPrefix}: ${result.error}`);
+            if (statusDiv) {
+                statusDiv.textContent = `Error: ${result.error}`;
+                statusDiv.classList.add('text-danger');
+            }
+            
+            if (progressUI) {
+                let existingError = progressUI.querySelector('.upload-error-message');
+                if (!existingError) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'upload-error-message mt-2';
+                    errorDiv.innerHTML = `
+                        <button type="button" class="btn btn-sm btn-outline-danger retry-btn">
+                            <i class="bi bi-arrow-repeat"></i> Retry
+                        </button>
+                    `;
+                    progressUI.appendChild(errorDiv);
+                    
+                    const retryBtn = errorDiv.querySelector('.retry-btn');
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', function() {
+                            console.log(`Retry clicked for ${result.formPrefix}`);
+                            fileInput.value = '';
+                            if (progressUI) {
+                                progressUI.remove();
+                            }
+                        });
+                    }
+                }
+            }
         }
-      }
     });
   }
-
+  
   function showErrorMessage(formPrefix, error) {
     const inputSelector = `[name="${formPrefix}-image"]`;
     const fileInput = document.querySelector(inputSelector);
