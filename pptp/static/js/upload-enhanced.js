@@ -652,83 +652,151 @@ document.addEventListener('DOMContentLoaded', function() {
   
     if (form) {
       form.addEventListener('submit', function(e) {
+        console.log('Form submit event triggered', {
+          submitter: e.submitter,
+          submitterName: e.submitter?.name,
+          submitterValue: e.submitter?.value
+        });
+  
+        // Only intercept submit_product submissions
         if (e.submitter && e.submitter.name === 'submit_product') {
           e.preventDefault();
+          console.log('Intercepting submit_product submission');
           
           // Check for active uploads
           if (state.activeUploads > 0) {
+            console.log('Blocking submission - active uploads:', state.activeUploads);
             showValidationErrors(['Please wait for all uploads to complete before submitting']);
             return;
           }
           
           // Basic client-side validation
-          const productName = document.querySelector('input[name="product_name"]').value.trim();
+          const productNameInput = document.querySelector('input[name="product_name"]');
+          const productName = productNameInput ? productNameInput.value.trim() : '';
           if (!productName) {
+            console.log('Blocking submission - missing product name');
             showValidationErrors(['Product name is required']);
             return;
           }
           
           // Server-side validation
-          const validateUrl = document.getElementById('ajax-validate-url').value;
+          const validateUrl = document.getElementById('ajax-validate-url')?.value;
           if (!validateUrl) {
-            console.error('Validation URL not found');
-            form.submit(); // Fall back to standard submission
+            console.error('Validation URL not found, falling back to standard submission');
+            // Create a hidden input to ensure submit_product is sent
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'submit_product';
+            hiddenInput.value = '1';
+            form.appendChild(hiddenInput);
+            form.submit();
             return;
           }
           
-          const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+          const csrfTokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+          const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+          
+          if (!csrfToken) {
+            console.error('CSRF token not found');
+            showValidationErrors(['Security token missing. Please refresh the page.']);
+            return;
+          }
+  
+          console.log('Starting server validation');
+          
+          // Show loading state
+          const submitButton = e.submitter;
+          const originalText = submitButton.innerHTML;
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Validating...';
           
           fetch(validateUrl, {
             method: 'POST',
             headers: {
-              'X-CSRFToken': csrfToken
+              'X-CSRFToken': csrfToken,
+              'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: new FormData(form)
+            body: new URLSearchParams(new FormData(form))
           })
-          .then(response => response.json())
+          .then(response => {
+            console.log('Validation response status:', response.status);
+            if (!response.ok) {
+              throw new Error(`Server error: ${response.status}`);
+            }
+            return response.json();
+          })
           .then(data => {
+            console.log('Validation response:', data);
             if (data.valid) {
+              console.log('Validation passed, submitting form');
+              // Create hidden input to ensure submit_product is sent
+              const hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = 'submit_product';
+              hiddenInput.value = '1';
+              form.appendChild(hiddenInput);
+              
+              // Remove the event listener temporarily to avoid recursion
+              form.removeEventListener('submit', arguments.callee);
               form.submit();
             } else {
-              showValidationErrors(data.errors);
+              console.log('Validation failed:', data.errors);
+              showValidationErrors(data.errors || ['Validation failed']);
+              // Restore button state
+              submitButton.disabled = false;
+              submitButton.innerHTML = originalText;
             }
           })
           .catch(error => {
+            console.error('Validation error:', error);
             showValidationErrors(['An error occurred during validation. Please try again.']);
+            // Restore button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
           });
+        } else {
+          // Let other submissions (like save_progress) go through normally
+          console.log('Allowing normal form submission for:', e.submitter?.name);
         }
       });
     }
-
+  
     function showValidationErrors(errors) {
+      console.log('Showing validation errors:', errors);
+      
       // Remove any existing error containers
-      const existingErrors = form.querySelectorAll('.alert.alert-danger');
+      const existingErrors = form.querySelectorAll('.validation-errors');
       existingErrors.forEach(el => el.remove());
       
       // Create error container
       const errorContainer = document.createElement('div');
-      errorContainer.className = 'alert alert-danger mb-4';
-      const errorList = document.createElement('ul');
-      errorList.className = 'mb-0';
+      errorContainer.className = 'alert alert-danger mb-4 validation-errors';
       
-      // Add each error
-      errors.forEach(error => {
-        const li = document.createElement('li');
-        li.textContent = error;
-        errorList.appendChild(li);
-      });
-      
-      errorContainer.appendChild(errorList);
+      if (errors.length === 1) {
+        errorContainer.textContent = errors[0];
+      } else {
+        const errorList = document.createElement('ul');
+        errorList.className = 'mb-0';
+        
+        errors.forEach(error => {
+          const li = document.createElement('li');
+          li.textContent = error;
+          errorList.appendChild(li);
+        });
+        
+        errorContainer.appendChild(errorList);
+      }
       
       // Add to form
       const firstCard = form.querySelector('.card-body');
-      firstCard.insertBefore(errorContainer, firstCard.firstChild);
-      
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (firstCard) {
+        firstCard.insertBefore(errorContainer, firstCard.firstChild);
+        
+        // Scroll to top
+        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   }
-
 
   
 });
