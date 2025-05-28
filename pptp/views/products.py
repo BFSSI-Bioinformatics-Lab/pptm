@@ -318,6 +318,11 @@ class CombinedUploadView(LoginRequiredMixin, View):
         elif len(product.product_name.split()) < 2:
             errors.append(_("Please enter the full product name (at least two words)"))
 
+        if not product.package_size:
+            errors.append(_("Package size is required"))
+        elif not product.package_size_unit:
+            errors.append(_("Package size unit is required"))
+
         if not product.barcodes.exists():
             errors.append(_("At least one barcode image is required"))
         elif product.has_multiple_barcodes and product.barcodes.count() < 2:
