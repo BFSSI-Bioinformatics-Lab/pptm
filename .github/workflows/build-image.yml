@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - simplify_upload
     tags:
       - 'v*'
 

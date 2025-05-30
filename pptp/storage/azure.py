@@ -20,14 +20,34 @@ class AzureBlobStorageError(Exception):
 class AzureBlobStorage(Storage):
     def __init__(self):
         try:
-            self.account_url = settings.AZURE_ACCOUNT_URL
-            self.sas_token = settings.AZURE_SAS_TOKEN
-            self.container = settings.AZURE_CONTAINER
+            required_settings = {
+                'AZURE_ACCOUNT_URL': getattr(settings, 'AZURE_ACCOUNT_URL', None),
+                'AZURE_SAS_TOKEN': getattr(settings, 'AZURE_SAS_TOKEN', None),
+                'AZURE_CONTAINER': getattr(settings, 'AZURE_CONTAINER', None),
+            }
+
+            missing_settings = [
+                setting_name for setting_name, setting_value in required_settings.items()
+                if not setting_value or (isinstance(setting_value, str) and not setting_value.strip())
+            ]
+
+            if missing_settings:
+                raise AzureBlobStorageError(
+                    f"Missing or empty Azure configuration: {', '.join(missing_settings)}"
+                )
+
+            self.account_url = required_settings['AZURE_ACCOUNT_URL']
+            self.sas_token = required_settings['AZURE_SAS_TOKEN']
+            self.container = required_settings['AZURE_CONTAINER']
+
             self.client = BlobServiceClient(
                 account_url=self.account_url,
                 credential=self.sas_token
             )
             self.container_client = self.client.get_container_client(self.container)
+
+        except AzureBlobStorageError:
+            raise
         except (AttributeError, ValueError) as e:
             raise AzureBlobStorageError(f"Azure storage configuration error: {str(e)}")
         except Exception as e:
