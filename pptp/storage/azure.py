@@ -26,15 +26,24 @@ class AzureBlobStorage(Storage):
                 'AZURE_CONTAINER': getattr(settings, 'AZURE_CONTAINER', None),
             }
 
-            missing_settings = [
-                setting_name for setting_name, setting_value in required_settings.items()
-                if not setting_value or (isinstance(setting_value, str) and not setting_value.strip())
-            ]
+            missing_settings = []
+            type_errors = []
 
-            if missing_settings:
-                raise AzureBlobStorageError(
-                    f"Missing or empty Azure configuration: {', '.join(missing_settings)}"
-                )
+            for setting_name, setting_value in required_settings.items():
+                if setting_value is None:
+                    missing_settings.append(setting_name)
+                elif not isinstance(setting_value, str):
+                    type_errors.append(f"{setting_name} (type: {type(setting_value).__name__})")
+                elif not setting_value.strip():
+                    missing_settings.append(f"{setting_name} (empty)")
+
+            if missing_settings or type_errors:
+                error_parts = []
+                if missing_settings:
+                    error_parts.append(f"Missing/empty: {', '.join(missing_settings)}")
+                if type_errors:
+                    error_parts.append(f"Wrong type: {', '.join(type_errors)}")
+                raise AzureBlobStorageError(f"Azure configuration errors - {'; '.join(error_parts)}")
 
             self.account_url = required_settings['AZURE_ACCOUNT_URL']
             self.sas_token = required_settings['AZURE_SAS_TOKEN']
