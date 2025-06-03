@@ -16,13 +16,7 @@ from ..models import Product, Barcode, NutritionFacts, Ingredients, ProductImage
 from ..forms.products import ProductSetupForm, BarcodeUploadForm, NutritionFactsUploadForm, IngredientsUploadForm, ProductImageUploadForm
 
 
-class BaseProductView(LoginRequiredMixin):
-    """Base class for all product-related views"""
-    def get_user_from_headers(self):
-        return self.request.headers.get('Dh-User')
-
-
-class BaseProductTemplateView(BaseProductView, TemplateView):
+class BaseProductTemplateView(LoginRequiredMixin, TemplateView):
     """Base class for views that render templates"""
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -34,7 +28,7 @@ class ProductDashboardView(BaseProductTemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        username = self.get_user_from_headers()
+        username = self.request.user.email
         
         # Get all user's products
         user_products = Product.objects.filter(created_by=username)
@@ -119,21 +113,23 @@ class CombinedUploadView(LoginRequiredMixin, View):
 
     def get(self, request, pk=None):
         if pk:
-            # Editing existing product
             product = get_object_or_404(Product, pk=pk)
+            if not product.created_by:
+                product.created_by = request.user.email
+                product.save()
             form = ProductSetupForm(instance=product)
             is_editing = True
         else:
             # Creating new product - create it immediately so we have an ID for AJAX
             product = Product.objects.create(
-                created_by=request.user.username,
+                created_by=request.user.email,
                 product_name="",  # Will be filled in by form
             )
             # Redirect to edit URL so we have a proper ID
             return redirect('products:combined_upload_edit', pk=product.pk)
 
         context = self.get_context_data(product, form, is_editing)
-        return render(request, self.template_name, context) 
+        return render(request, self.template_name, context)
 
     def post(self, request, pk=None):
         if pk:
@@ -150,7 +146,7 @@ class CombinedUploadView(LoginRequiredMixin, View):
         if form.is_valid():
             with transaction.atomic():
                 if not is_editing:
-                    form.instance.created_by = request.user.username
+                    form.instance.created_by = request.user.email
 
                 product = form.save()
                 upload_errors = self.process_uploads(request, product)
