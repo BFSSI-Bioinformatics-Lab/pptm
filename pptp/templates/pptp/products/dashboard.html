@@ -158,7 +158,7 @@
         <div class="card-body p-0">
             <div class="list-group list-group-flush">
                 {% for product in recent_submissions %}
-                <div class="list-group-item">
+                <a href="{% url 'products:combined_upload_edit' pk=product.pk %}" class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">{{ product.product_name }}</h5>
                         <small>{{ product.created_at|date:"M d, Y" }}</small>
@@ -178,7 +178,7 @@
                         <span class="badge bg-secondary">{% trans "Supplemented Food" %}</span>
                         {% endif %}
                     </div>
-                </div>
+                </a>
                 {% empty %}
                 <div class="list-group-item">
                     <p class="mb-0 text-muted">{% trans "No recent submissions found." %}</p>
