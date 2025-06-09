@@ -17,7 +17,6 @@ from ..forms.products import ProductSetupForm, BarcodeUploadForm, NutritionFacts
 
 
 class BaseProductTemplateView(LoginRequiredMixin, TemplateView):
-    """Base class for views that render templates"""
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return context
@@ -30,46 +29,37 @@ class ProductDashboardView(BaseProductTemplateView):
         context = super().get_context_data(**kwargs)
         username = self.request.user.email
         
-        # Get all user's products
         user_products = Product.objects.filter(created_by=username)
         
-        # Basic statistics
         context['total_products'] = user_products.count()
         context['completed_products'] = user_products.filter(submission_complete=True).count()
         context['incomplete_products'] = context['total_products'] - context['completed_products']
         
-        # Special product types
         context['variety_packs'] = user_products.filter(is_variety_pack=True).count()
         context['supplemented_foods'] = user_products.filter(is_supplemented_food=True).count()
         
-        # Recent activity (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
         context['recent_products'] = user_products.filter(created_at__gte=thirty_days_ago).count()
         
-        # Products by image type count
         products_with_images = user_products.annotate(
             image_count=Count('product_images')
         ).filter(image_count__gt=0).count()
         context['products_with_images'] = products_with_images
         
-        # Products with multiple nutrition facts or barcodes
         context['multi_nutrition_products'] = user_products.filter(has_multiple_nutrition_facts=True).count()
         context['multi_barcode_products'] = user_products.filter(has_multiple_barcodes=True).count()
         
-        # Offline vs online submissions
         context['offline_products'] = user_products.filter(is_offline=True).count()
         context['online_products'] = user_products.filter(is_offline=False).count()
         
-        # Recent submissions (limited to 5)
         context['recent_submissions'] = user_products.order_by('-created_at')[:5]
         
         return context
 
 
 class BaseProductStepView(BaseProductTemplateView):
-    """Base class for all product submission steps"""
-    view_step = None  # Will be set by child classes
-    template_name = 'pptp/products/base_submission.html'  # Default template
+    view_step = None
+    template_name = 'pptp/products/base_submission.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -90,11 +80,9 @@ class BaseProductStepView(BaseProductTemplateView):
         return Product.objects.get(pk=self.kwargs['pk'])
 
     def is_previous_step_complete(self):
-        """Override in child classes to implement specific validation"""
         return True
 
     def get_previous_step_url(self):
-        """Override in child classes to specify the previous step URL"""
         raise NotImplementedError
 
 
@@ -108,7 +96,6 @@ class ProductSetupView(BaseProductStepView, UpdateView):
 
 
 class CombinedUploadView(LoginRequiredMixin, View):
-    """A single page that combines all the upload steps with enhanced drag-and-drop functionality"""
     template_name = 'pptp/products/combined_upload.html'
 
     def get(self, request, pk=None):
@@ -120,12 +107,10 @@ class CombinedUploadView(LoginRequiredMixin, View):
             form = ProductSetupForm(instance=product)
             is_editing = True
         else:
-            # Creating new product - create it immediately so we have an ID for AJAX
             product = Product.objects.create(
                 created_by=request.user.email,
-                product_name="",  # Will be filled in by form
+                product_name="",
             )
-            # Redirect to edit URL so we have a proper ID
             return redirect('products:combined_upload_edit', pk=product.pk)
 
         context = self.get_context_data(product, form, is_editing)
@@ -189,7 +174,6 @@ class CombinedUploadView(LoginRequiredMixin, View):
             return render(request, self.template_name, context)
 
     def get_context_data(self, product, form, is_editing):
-        """Build context data for the template"""
         context = {
             'product': product,
             'form': form,
@@ -231,7 +215,6 @@ class CombinedUploadView(LoginRequiredMixin, View):
         return context
     
     def process_uploads(self, request, product):
-        """Process all file uploads from the form, return list of errors"""
         errors = []
         
         def process_upload(form_class, prefix, is_product_image=False, image_type=None):
@@ -306,7 +289,6 @@ class CombinedUploadView(LoginRequiredMixin, View):
         return errors
 
     def get_validation_errors(self, product):
-        """Check all requirements and return list of validation errors"""
         errors = []
 
         if not product.product_name:
@@ -345,7 +327,6 @@ class CombinedUploadView(LoginRequiredMixin, View):
 @require_POST
 @transaction.atomic
 def ajax_upload_image(request, pk):
-    """Handle AJAX image uploads from drag and drop functionality"""
     if 'file' not in request.FILES:
         return JsonResponse({'success': False, 'error': _("No file provided")})
 
@@ -359,7 +340,6 @@ def ajax_upload_image(request, pk):
         product = get_object_or_404(Product, pk=pk)
         notes = request.POST.get('notes', '')
         
-        # Create the appropriate type of image based on image_type
         if image_type == 'barcode':
             barcode_number = request.POST.get('barcode_number', '')
             image = Barcode.objects.create(
@@ -407,11 +387,6 @@ def ajax_upload_image(request, pk):
 
 @require_POST
 def validate_product_submission(request, pk):
-    """
-    AJAX endpoint to validate product submission before final submission
-    Returns errors as JSON that can be displayed to the user
-    """
-
     try:
         product = Product.objects.get(pk=pk)
 
@@ -433,3 +408,39 @@ def validate_product_submission(request, pk):
             'valid': False,
             'errors': [str(e)]
         }, status=500)
+
+
+@require_POST
+def delete_image(request, pk):
+    try:
+        image_id = request.POST.get('image_id')
+        image_type = request.POST.get('image_type')
+        
+        if not image_id or not image_type:
+            return JsonResponse({'success': False, 'error': _("Missing image ID or type")})
+        
+        product = get_object_or_404(Product, pk=pk)
+        
+        if image_type == 'barcode':
+            image = get_object_or_404(Barcode, id=image_id, product=product)
+        elif image_type == 'nutrition':
+            image = get_object_or_404(NutritionFacts, id=image_id, product=product)
+        elif image_type == 'ingredients':
+            image = get_object_or_404(Ingredients, id=image_id, product=product)
+        elif image_type in ['front', 'back', 'side', 'other']:
+            image = get_object_or_404(ProductImage, id=image_id, product=product, image_type=image_type)
+        else:
+            return JsonResponse({'success': False, 'error': _("Invalid image type")})
+        
+        if image.image:
+            try:
+                image.image.delete(save=False)
+            except:
+                pass
+        
+        image.delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

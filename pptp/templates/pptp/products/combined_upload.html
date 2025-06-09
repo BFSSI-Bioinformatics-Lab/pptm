@@ -34,6 +34,7 @@
             {% csrf_token %}
             <input type="hidden" id="ajax-upload-url" value="{% url 'products:ajax_upload' product.id %}">
             <input type="hidden" id="ajax-validate-url" value="{% url 'products:validate_product' product.id %}">
+            <input type="hidden" id="delete-image-url" value="{% url 'products:delete_image' product.id %}">
             <input type="hidden" id="product-id" value="{{ product.id }}">
             
             <!-- Product Name Section -->
@@ -119,8 +120,17 @@
                   <div class="card-body">
                     {% if product_images_by_type.front %}
                       {% for image in product_images_by_type.front %}
-                        <div class="existing-image">
-                          <img src="{{ image.image.url }}" class="img-fluid" alt="Front image">
+                        <div class="existing-image mb-2" data-image-id="{{ image.id }}" data-image-type="front">
+                          <div class="position-relative">
+                            <img src="{{ image.image.url }}" class="img-fluid" alt="Front image">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                    data-image-id="{{ image.id }}" data-image-type="front">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </div>
+                          {% if image.notes %}
+                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
+                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -157,8 +167,17 @@
                   <div class="card-body">
                     {% if product_images_by_type.back %}
                       {% for image in product_images_by_type.back %}
-                        <div class="existing-image">
-                          <img src="{{ image.image.url }}" class="img-fluid" alt="Back image">
+                        <div class="existing-image mb-2" data-image-id="{{ image.id }}" data-image-type="back">
+                          <div class="position-relative">
+                            <img src="{{ image.image.url }}" class="img-fluid" alt="Back image">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                    data-image-id="{{ image.id }}" data-image-type="back">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </div>
+                          {% if image.notes %}
+                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
+                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -196,10 +215,19 @@
                     {% if existing_barcodes %}
                       {% for barcode in existing_barcodes %}
                         {% if barcode.is_uploaded and barcode.image %}
-                          <div class="existing-image">
-                            <img src="{{ barcode.image.url }}" class="img-fluid" alt="Barcode">
+                          <div class="existing-image mb-2" data-image-id="{{ barcode.id }}" data-image-type="barcode">
+                            <div class="position-relative">
+                              <img src="{{ barcode.image.url }}" class="img-fluid" alt="Barcode">
+                              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                      data-image-id="{{ barcode.id }}" data-image-type="barcode">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
                             {% if barcode.barcode_number %}
                               <div class="small mt-1 font-monospace">{{ barcode.barcode_number }}</div>
+                            {% endif %}
+                            {% if barcode.notes %}
+                              <small class="text-muted d-block">{{ barcode.notes }}</small>
                             {% endif %}
                           </div>
                         {% endif %}
@@ -244,8 +272,17 @@
                     {% if existing_nutrition_facts %}
                       {% for item in existing_nutrition_facts %}
                         {% if item.is_uploaded and item.image %}
-                          <div class="existing-image">
-                            <img src="{{ item.image.url }}" class="img-fluid" alt="Nutrition Facts">
+                          <div class="existing-image mb-2" data-image-id="{{ item.id }}" data-image-type="nutrition">
+                            <div class="position-relative">
+                              <img src="{{ item.image.url }}" class="img-fluid" alt="Nutrition Facts">
+                              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                      data-image-id="{{ item.id }}" data-image-type="nutrition">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
+                            {% if item.notes %}
+                              <small class="text-muted d-block mt-1">{{ item.notes }}</small>
+                            {% endif %}
                           </div>
                         {% endif %}
                       {% endfor %}
@@ -289,8 +326,17 @@
                     {% if existing_ingredients %}
                       {% for item in existing_ingredients %}
                         {% if item.is_uploaded and item.image %}
-                          <div class="existing-image">
-                            <img src="{{ item.image.url }}" class="img-fluid" alt="Ingredients">
+                          <div class="existing-image mb-2" data-image-id="{{ item.id }}" data-image-type="ingredients">
+                            <div class="position-relative">
+                              <img src="{{ item.image.url }}" class="img-fluid" alt="Ingredients">
+                              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                      data-image-id="{{ item.id }}" data-image-type="ingredients">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
+                            {% if item.notes %}
+                              <small class="text-muted d-block mt-1">{{ item.notes }}</small>
+                            {% endif %}
                           </div>
                         {% endif %}
                       {% endfor %}
@@ -331,8 +377,17 @@
                   <div class="card-body">
                     {% if product_images_by_type.side %}
                       {% for image in product_images_by_type.side %}
-                        <div class="existing-image">
-                          <img src="{{ image.image.url }}" class="img-fluid" alt="Side image">
+                        <div class="existing-image mb-2" data-image-id="{{ image.id }}" data-image-type="side">
+                          <div class="position-relative">
+                            <img src="{{ image.image.url }}" class="img-fluid" alt="Side image">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                    data-image-id="{{ image.id }}" data-image-type="side">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </div>
+                          {% if image.notes %}
+                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
+                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -365,8 +420,17 @@
                   <div class="card-body">
                     {% if product_images_by_type.other %}
                       {% for image in product_images_by_type.other %}
-                        <div class="existing-image">
-                          <img src="{{ image.image.url }}" class="img-fluid" alt="Other image">
+                        <div class="existing-image mb-2" data-image-id="{{ image.id }}" data-image-type="other">
+                          <div class="position-relative">
+                            <img src="{{ image.image.url }}" class="img-fluid" alt="Other image">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                    data-image-id="{{ image.id }}" data-image-type="other">
+                              <i class="bi bi-x"></i>
+                            </button>
+                          </div>
+                          {% if image.notes %}
+                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
+                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}

@@ -4,6 +4,7 @@ from ..views.products import (
     CombinedUploadView,
     ajax_upload_image,
     validate_product_submission,
+    delete_image,
 )
 
 app_name = 'products'
@@ -13,5 +14,6 @@ urlpatterns = [
     path('submit/', CombinedUploadView.as_view(), name='combined_upload_new'),
     path('submit/<int:pk>/', CombinedUploadView.as_view(), name='combined_upload_edit'),
     path('submit/<int:pk>/ajax-upload/', ajax_upload_image, name='ajax_upload'),
-    path('submit/<int:pk>/validate/', validate_product_submission, name='validate_product')
+    path('submit/<int:pk>/validate/', validate_product_submission, name='validate_product'),
+    path('submit/<int:pk>/delete-image/', delete_image, name='delete_image'),
 ]
