@@ -26,6 +26,7 @@ class BaseUploadForm(forms.ModelForm):
                     'placeholder': _('Notes (optional)')
                 })
 
+
 class ProductSetupForm(forms.ModelForm):
     """Form for basic product setup information"""
     
@@ -43,6 +44,18 @@ class ProductSetupForm(forms.ModelForm):
             'has_multiple_nutrition_facts',
             'has_multiple_barcodes',
             'needs_manual_verification',
+            'has_supplemental_caution_id',
+            'has_nutrient_content_claim',
+            'has_nutrient_function_claim',
+            'has_disease_risk_reduction_claim',
+            'has_probiotic_claim',
+            'has_therapeutic_claim',
+            'has_function_claim',
+            'has_general_health_claim',
+            'has_quantitative_nutrient_declaration',
+            'has_implied_nonspecific_claim',
+            'has_logos_icons',
+            'has_third_party_label',
         ]
         widgets = {
             'product_name': forms.TextInput(attrs={
@@ -66,6 +79,18 @@ class ProductSetupForm(forms.ModelForm):
             'has_multiple_nutrition_facts': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_multiple_barcodes': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'needs_manual_verification': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_supplemental_caution_id': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_nutrient_content_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_nutrient_function_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_disease_risk_reduction_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_probiotic_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_therapeutic_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_function_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_general_health_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_quantitative_nutrient_declaration': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_implied_nonspecific_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_logos_icons': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_third_party_label': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
     def clean_product_name(self):
