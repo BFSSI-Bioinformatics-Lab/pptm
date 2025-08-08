@@ -464,3 +464,15 @@
     max-height: 100px;
   }
 }
+
+.supplemented-flags {
+  transition: all 0.3s ease;
+}
+.supplemented-flags.collapsed {
+  display: none;
+}
+.flags-toggle-btn {
+  transition: transform 0.3s ease;
+}
+.flags-toggle-btn.collapsed {
+  transform: rotate(-90deg);

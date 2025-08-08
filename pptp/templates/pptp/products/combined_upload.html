@@ -104,6 +104,110 @@
               </div>
             </div>
 
+            <!-- Supplemented Food Flags Section -->
+            <div class="card bg-light mb-3" id="supplemented-flags-section">
+              <div class="card-header bg-transparent border-0 pb-0">
+                <button type="button" class="btn btn-link text-decoration-none p-0 d-flex align-items-center" 
+                        data-bs-toggle="collapse" data-bs-target="#supplemented-flags-content" 
+                        aria-expanded="false" aria-controls="supplemented-flags-content"
+                        id="supplemented-flags-toggle">
+                  <i class="bi bi-chevron-down flags-toggle-btn me-2"></i>
+                  <span class="fw-medium">Supplemented Food Claims & Labels</span>
+                  <small class="text-muted ms-2">(Click to expand if this is a supplemented food)</small>
+                </button>
+              </div>
+              <div class="collapse" id="supplemented-flags-content">
+                <div class="card-body pt-2">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="form-check">
+                        {{ form.has_supplemental_caution_id }}
+                        <label class="form-check-label" for="{{ form.has_supplemental_caution_id.id_for_label }}">
+                          Supplemental Caution Identifier
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_quantitative_nutrient_declaration }}
+                        <label class="form-check-label" for="{{ form.has_quantitative_nutrient_declaration.id_for_label }}">
+                          Quantitative Nutrient Declaration
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_nutrient_content_claim }}
+                        <label class="form-check-label" for="{{ form.has_nutrient_content_claim.id_for_label }}">
+                          Nutrient Content Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_nutrient_function_claim }}
+                        <label class="form-check-label" for="{{ form.has_nutrient_function_claim.id_for_label }}">
+                          Nutrient Function Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_disease_risk_reduction_claim }}
+                        <label class="form-check-label" for="{{ form.has_disease_risk_reduction_claim.id_for_label }}">
+                          Disease Risk Reduction Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_probiotic_claim }}
+                        <label class="form-check-label" for="{{ form.has_probiotic_claim.id_for_label }}">
+                          Probiotic Claim
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                      <div class="form-check">
+                        {{ form.has_therapeutic_claim }}
+                        <label class="form-check-label" for="{{ form.has_therapeutic_claim.id_for_label }}">
+                          Therapeutic Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_function_claim }}
+                        <label class="form-check-label" for="{{ form.has_function_claim.id_for_label }}">
+                          Function Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_general_health_claim }}
+                        <label class="form-check-label" for="{{ form.has_general_health_claim.id_for_label }}">
+                          General Health Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_implied_nonspecific_claim }}
+                        <label class="form-check-label" for="{{ form.has_implied_nonspecific_claim.id_for_label }}">
+                          Implied/Non-specific Claim
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_logos_icons }}
+                        <label class="form-check-label" for="{{ form.has_logos_icons.id_for_label }}">
+                          Logos/Icons
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        {{ form.has_third_party_label }}
+                        <label class="form-check-label" for="{{ form.has_third_party_label.id_for_label }}">
+                          Third Party Label/Certification
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3 pt-2 border-top">
+                    <small class="text-muted">
+                      <strong>Note:</strong> These flags are only relevant for products marked as "Supplemented Food" above. 
+                      Check all elements that appear on the product packaging.
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
             <!-- Required Uploads Section -->
             <h2 class="h4 section-heading first-section-heading">Required Images</h2>
             

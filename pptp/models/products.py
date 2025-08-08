@@ -16,6 +16,7 @@ UNIT_CHOICES = [
     ("OTH", "Other"),
 ]
 
+
 def get_upload_path(instance, filename):
     model_name = instance.__class__.__name__.lower()
     return f"{model_name}/{filename}"
@@ -96,6 +97,19 @@ class Product(models.Model):
         default=False,
         help_text=_("Product is difficult to photograph clearly or otherwise classify, flag for manual verification")
     )
+    # for supp foods
+    has_supplemental_caution_id = models.BooleanField(default=False)
+    has_nutrient_content_claim = models.BooleanField(default=False)
+    has_nutrient_function_claim = models.BooleanField(default=False)
+    has_disease_risk_reduction_claim = models.BooleanField(default=False)
+    has_probiotic_claim = models.BooleanField(default=False)
+    has_therapeutic_claim = models.BooleanField(default=False)
+    has_function_claim = models.BooleanField(default=False)
+    has_general_health_claim = models.BooleanField(default=False)
+    has_quantitative_nutrient_declaration = models.BooleanField(default=False)
+    has_implied_nonspecific_claim = models.BooleanField(default=False)
+    has_logos_icons = models.BooleanField(default=False)
+    has_third_party_label = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
