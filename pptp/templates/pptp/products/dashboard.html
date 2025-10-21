@@ -177,6 +177,9 @@
                         {% if product.is_supplemented_food %}
                         <span class="badge bg-secondary">{% trans "Supplemented Food" %}</span>
                         {% endif %}
+                        {% if product.is_TDS %}
+                        <span class="badge bg-secondary">{% trans "TDS" %}</span>
+                        {% endif %}
                     </div>
                 </a>
                 {% empty %}

@@ -71,7 +71,11 @@ class Product(models.Model):
     )
     is_supplemented_food = models.BooleanField(
         default=False,
-        help_text=_("Check if this is a Supplemented Food as indicated by the front-of-pack caution identifier and supplemented food facts table")
+        help_text=_("Check if this is a Supplemented Food as defined by the regulations (whether or not it has a supplemental caution label)")
+    )
+    is_TDS = models.BooleanField(
+        default=False,
+        help_text=_("Check if this product is part of the Total Diet Study")
     )
     is_individually_packaged = models.BooleanField(
         default=False,
