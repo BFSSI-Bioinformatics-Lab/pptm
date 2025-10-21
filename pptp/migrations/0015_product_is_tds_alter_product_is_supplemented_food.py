@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="product",
-            name="is_TDS",
+            name="is_tds",
             field=models.BooleanField(
                 default=False,
                 help_text="Check if this product is part of the Total Diet Study",

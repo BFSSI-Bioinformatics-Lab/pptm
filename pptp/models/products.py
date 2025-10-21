@@ -73,7 +73,7 @@ class Product(models.Model):
         default=False,
         help_text=_("Check if this is a Supplemented Food as defined by the regulations (whether or not it has a supplemental caution label)")
     )
-    is_TDS = models.BooleanField(
+    is_tds = models.BooleanField(
         default=False,
         help_text=_("Check if this product is part of the Total Diet Study")
     )
