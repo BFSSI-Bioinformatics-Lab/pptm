@@ -37,6 +37,7 @@ class ProductSetupForm(forms.ModelForm):
             'package_size',
             'package_size_unit',
             'is_supplemented_food',
+            'is_TDS',
             'is_variety_pack',
             'is_individually_packaged',
             'has_preparation_instructions',
@@ -72,6 +73,7 @@ class ProductSetupForm(forms.ModelForm):
                 'class': 'form-select'
             }),
             'is_supplemented_food': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_TDS': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_variety_pack': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_individually_packaged': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_preparation_instructions': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

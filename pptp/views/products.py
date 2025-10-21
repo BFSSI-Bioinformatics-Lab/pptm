@@ -37,6 +37,7 @@ class ProductDashboardView(BaseProductTemplateView):
         
         context['variety_packs'] = user_products.filter(is_variety_pack=True).count()
         context['supplemented_foods'] = user_products.filter(is_supplemented_food=True).count()
+        context['TDS'] = user_products.filter(is_TDS=True).count()
         
         thirty_days_ago = timezone.now() - timedelta(days=30)
         context['recent_products'] = user_products.filter(created_at__gte=thirty_days_ago).count()
