@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Initializing enhanced upload functionality');
   
-  // Configuration
   const config = {
     sections: ['barcode', 'nutrition', 'ingredients'],
     maxConcurrentUploads: 3
   };
 
-  // State tracking
   const state = {
     counters: {
       barcode: 0,
@@ -18,11 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadResults: []
   };
 
-  // Get URLs and tokens
   const deleteImageUrl = document.getElementById('delete-image-url')?.value;
   const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
-  // File Uploader class for handling parallel uploads
   class FileUploader {
     constructor(options) {
       console.log('Initializing FileUploader', options);
@@ -39,9 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
       this.results = [];
     }
   
-    addFile(file, imageType, formPrefix, extraData = {}) {
+    addFile(file, imageType, formPrefix, fileInput) {
       console.log(`Adding file to upload queue: ${formPrefix}, type: ${imageType}`);
-      this.queue.push({ file, imageType, formPrefix, extraData });
+      this.queue.push({ file, imageType, formPrefix, fileInput });
       this.processQueue();
       return this;
     }
@@ -69,10 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       formData.append('file', item.file);
       formData.append('image_type', item.imageType);
+      formData.append('notes', '');
       
-      Object.keys(item.extraData).forEach(key => {
-        formData.append(key, item.extraData[key]);
-      });
+      console.log(`=== Uploading file ${item.formPrefix} ===`);
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -156,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Initialize uploader
   const uploader = new FileUploader({
     productId: typeof productId !== 'undefined' ? productId : null,
     csrfToken: typeof csrfToken !== 'undefined' ? csrfToken : null,
@@ -174,10 +168,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Initialize delete functionality
   setupDeleteButtons();
 
-  // Setup event listeners for Add More buttons
   document.querySelectorAll('.add-more-btn').forEach(button => {
     button.addEventListener('click', function() {
       const section = this.dataset.section;
@@ -186,21 +178,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Handle checkbox changes for multiple uploads
   setupMultipleUploadCheckboxes();
 
-  // Initialize all existing file inputs
   document.querySelectorAll('input[type="file"]').forEach(input => {
     setupFileInput(input);
   });
 
-  // Initialize form validation
   initializeFormValidation();
 
-  // Initialize form submission handling
   setupFormSubmission();
 
-  // DELETE FUNCTIONALITY
   function setupDeleteButtons() {
     document.querySelectorAll('.delete-image-btn').forEach(btn => {
       btn.addEventListener('click', handleDeleteImage);
@@ -292,7 +279,6 @@ document.addEventListener('DOMContentLoaded', function() {
     return container;
   }
 
-  // UPLOAD FUNCTIONALITY
   function setupMultipleUploadCheckboxes() {
     console.log('Setting up multiple upload checkboxes');
     
@@ -394,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
       setupFileInput(fileInput);
     }
     
-    // Re-setup delete buttons for any new elements
     setupDeleteButtons();
     
     return uploadItem;
@@ -555,26 +540,10 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    console.log(`Preparing upload: ${formPrefix}, type: ${imageType}`);
-    
-    const extraData = {};
-    
-    if (imageType === 'barcode') {
-      const barcodeNumInput = document.querySelector(`[name="${formPrefix}-barcode_number"]`);
-      if (barcodeNumInput) {
-        extraData.barcode_number = barcodeNumInput.value || '';
-      }
-    }
-    
-    const notesInput = document.querySelector(`[name="${formPrefix}-notes"]`);
-    if (notesInput) {
-      extraData.notes = notesInput.value || '';
-    }
-    
-    console.log(`Extra data for ${formPrefix}:`, extraData);
+    console.log(`Auto-uploading file immediately: ${formPrefix}, type: ${imageType}`);
     
     createProgressUI(fileInput, formPrefix);
-    uploader.addFile(file, imageType, formPrefix, extraData);
+    uploader.addFile(file, imageType, formPrefix, fileInput);
   }
 
   function createProgressUI(fileInput, formPrefix) {
@@ -634,39 +603,32 @@ document.addEventListener('DOMContentLoaded', function() {
         hiddenField.value = 'true';
         container.appendChild(hiddenField);
         
+        if (result.success) {
+          const imageIdField = document.createElement('input');
+          imageIdField.type = 'hidden';
+          imageIdField.name = `${result.formPrefix}-image_id`;
+          imageIdField.value = result.imageId;
+          container.appendChild(imageIdField);
+        }
+        
         const statusDiv = container.querySelector('.upload-status');
         const progressUI = container.querySelector('.upload-progress');
         
         if (result.success) {
-            console.log(`Showing success UI for ${result.formPrefix}`);
+            console.log(`Upload successful for ${result.formPrefix}, ID: ${result.imageId}`);
             if (statusDiv) {
-                statusDiv.textContent = 'Upload complete!';
-                statusDiv.classList.add('text-success');
+                statusDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Uploaded! Notes will be saved when you submit the form.</span>';
             }
             
             if (progressUI) {
-                let existingSuccess = progressUI.querySelector('.upload-success-message');
-                if (!existingSuccess) {
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'upload-success-message mt-2 d-flex justify-content-between align-items-center';
-                    successDiv.innerHTML = `
-                        <span class="text-success"><i class="bi bi-check-circle"></i> Upload successful</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary refresh-btn">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh Page
-                        </button>
-                    `;
-                    progressUI.appendChild(successDiv);
-                    
-                    const refreshBtn = successDiv.querySelector('.refresh-btn');
-                    if (refreshBtn) {
-                        refreshBtn.addEventListener('click', function() {
-                            window.location.reload();
-                        });
-                    }
+                const progressBar = progressUI.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.classList.remove('progress-bar');
+                    progressBar.classList.add('bg-success');
                 }
             }
         } else {
-            console.log(`Showing error UI for ${result.formPrefix}: ${result.error}`);
+            console.log(`Upload failed for ${result.formPrefix}: ${result.error}`);
             if (statusDiv) {
                 statusDiv.textContent = `Error: ${result.error}`;
                 statusDiv.classList.add('text-danger');
@@ -755,8 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
       form.addEventListener('submit', function(e) {
         console.log('Form submit event triggered', {
           submitter: e.submitter,
-          submitterName: e.submitter?.name,
-          submitterValue: e.submitter?.value
+          submitterName: e.submitter?.name
         });
   
         if (e.submitter && e.submitter.name === 'submit_product') {

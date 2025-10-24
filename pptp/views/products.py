@@ -1,4 +1,5 @@
 # views/products.py
+import json
 from datetime import timedelta
 from django.views.generic import View, UpdateView, TemplateView
 from django.db import transaction
@@ -135,6 +136,7 @@ class CombinedUploadView(LoginRequiredMixin, View):
                     form.instance.created_by = request.user.email
 
                 product = form.save()
+                self.update_uploaded_image_notes(request, product.pk)
                 upload_errors = self.process_uploads(request, product)
 
                 if upload_errors:
@@ -324,6 +326,47 @@ class CombinedUploadView(LoginRequiredMixin, View):
             errors.append(_("Missing required product images: %s") % ", ".join(missing_types_display))
 
         return errors
+    
+    def update_uploaded_image_notes(self, request, product_pk):
+        """
+        Update notes for images that were already uploaded via AJAX.
+        These images were uploaded immediately to Azure, but notes are captured
+        at form submission time.
+        """
+        if not request.POST.get('uploaded_images_notes'):
+            return
+        try:
+            notes_data = json.loads(request.POST.get('uploaded_images_notes'))
+            
+            for item in notes_data:
+                image_id = item.get('image_id')
+                image_type = item.get('image_type')
+                notes = item.get('notes', '')
+                
+                if not image_id or not image_type:
+                    continue
+                
+                try:
+                    if image_type == 'barcode':
+                        image = Barcode.objects.get(id=image_id, product_id=product_pk)
+                    elif image_type == 'nutrition':
+                        image = NutritionFacts.objects.get(id=image_id, product_id=product_pk)
+                    elif image_type == 'ingredients':
+                        image = Ingredients.objects.get(id=image_id, product_id=product_pk)
+                    elif image_type in ['front', 'back', 'side', 'other']:
+                        image = ProductImage.objects.get(id=image_id, product_id=product_pk)
+                    else:
+                        continue
+                    
+                    image.notes = notes
+                    image.save(update_fields=['notes'])
+                    
+                except Exception as e:
+                    print(f"Error updating notes for image {image_id}: {e}")
+                    continue
+                    
+        except Exception as e:
+            print(f"Error processing uploaded_images_notes: {e}")
 
 @require_POST
 @transaction.atomic

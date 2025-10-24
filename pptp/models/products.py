@@ -46,6 +46,14 @@ class Product(models.Model):
         null=True,
         help_text=_("Unique identifier for offline submissions")
     )
+
+    notes = models.TextField(blank=True, default='')
+    manual_barcode = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        help_text=_("barcode number entered by user")
+    )
     
     product_name = models.CharField(
         max_length=255,

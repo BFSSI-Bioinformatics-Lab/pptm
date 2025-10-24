@@ -214,6 +214,16 @@
             </div>
 
 
+            <!-- Product Notes Section -->
+            <div class="mb-4">
+              <label for="{{ form.notes.id_for_label }}" class="form-label">Product Notes</label>
+              {{ form.notes }}
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+
             <!-- Required Uploads Section -->
             <h2 class="h4 section-heading first-section-heading">Required Images</h2>
             
@@ -238,9 +248,6 @@
                               <i class="bi bi-x"></i>
                             </button>
                           </div>
-                          {% if image.notes %}
-                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
-                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -285,9 +292,6 @@
                               <i class="bi bi-x"></i>
                             </button>
                           </div>
-                          {% if image.notes %}
-                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
-                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -328,16 +332,13 @@
                           <div class="existing-image mb-2" data-image-id="{{ barcode.id }}" data-image-type="barcode">
                             <div class="position-relative">
                               <img src="{{ barcode.image.url }}" class="img-fluid" alt="Barcode">
-                              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                              <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn"
                                       data-image-id="{{ barcode.id }}" data-image-type="barcode">
                                 <i class="bi bi-x"></i>
                               </button>
                             </div>
                             {% if barcode.barcode_number %}
                               <div class="small mt-1 font-monospace">{{ barcode.barcode_number }}</div>
-                            {% endif %}
-                            {% if barcode.notes %}
-                              <small class="text-muted d-block">{{ barcode.notes }}</small>
                             {% endif %}
                           </div>
                         {% endif %}
@@ -353,9 +354,12 @@
                     </div>
                     <div class="upload-preview"></div>
                     
-                    <div class="mt-2">
-                      <input type="text" name="barcode-barcode_number" id="{{ barcode_form.barcode_number.id_for_label }}" class="form-control form-control-sm" placeholder="Barcode number (optional)">
+                    <div class="mt-3">
+                      <label for="{{ form.manual_barcode.id_for_label }}" class="form-label small">Barcode Number</label>
+                      {{ form.manual_barcode }}
+                      <div class="form-text">Enter the primary barcode number if visible</div>
                     </div>
+                    
                     <div id="barcodeUploadContainer" class="mt-4"></div>
                   </div>
                   <div class="card-footer-form">
@@ -368,7 +372,6 @@
                   </div>
                 </div>
               </div>
-              
               <!-- Nutrition Facts -->
               <div class="col-md-6">
                 <div class="card upload-card">
@@ -390,9 +393,6 @@
                                 <i class="bi bi-x"></i>
                               </button>
                             </div>
-                            {% if item.notes %}
-                              <small class="text-muted d-block mt-1">{{ item.notes }}</small>
-                            {% endif %}
                           </div>
                         {% endif %}
                       {% endfor %}
@@ -407,9 +407,6 @@
                     </div>
                     <div class="upload-preview"></div>
                     
-                    <div class="mt-2">
-                      <textarea name="nutrition-notes" id="{{ nutrition_form.notes.id_for_label }}" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
-                    </div>
                     <div id="nutritionUploadContainer" class="mt-4"></div>
                   </div>
                   <div class="card-footer-form">
@@ -444,9 +441,6 @@
                                 <i class="bi bi-x"></i>
                               </button>
                             </div>
-                            {% if item.notes %}
-                              <small class="text-muted d-block mt-1">{{ item.notes }}</small>
-                            {% endif %}
                           </div>
                         {% endif %}
                       {% endfor %}
@@ -461,9 +455,6 @@
                     </div>
                     <div class="upload-preview"></div>
                     
-                    <div class="mt-2">
-                      <textarea name="ingredients-notes" id="{{ ingredients_form.notes.id_for_label }}" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
-                    </div>
                   </div>
                   <div class="card-footer-form">
                   </div>
@@ -495,9 +486,6 @@
                               <i class="bi bi-x"></i>
                             </button>
                           </div>
-                          {% if image.notes %}
-                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
-                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -511,9 +499,6 @@
                     </div>
                     <div class="upload-preview"></div>
                     
-                    <div class="mt-2">
-                      <textarea name="image_side-notes" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -538,9 +523,6 @@
                               <i class="bi bi-x"></i>
                             </button>
                           </div>
-                          {% if image.notes %}
-                            <small class="text-muted d-block mt-1">{{ image.notes }}</small>
-                          {% endif %}
                         </div>
                       {% endfor %}
                     {% endif %}
@@ -554,9 +536,6 @@
                     </div>
                     <div class="upload-preview"></div>
                     
-                    <div class="mt-2">
-                      <textarea name="image_other-notes" class="form-control form-control-sm" rows="1" placeholder="Notes (optional)"></textarea>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -590,10 +569,6 @@
                       <input type="text" name="barcode-{index}-barcode_number" class="form-control">
                     </div>
                     
-                    <div class="mb-0">
-                      <label class="form-label">Notes (optional)</label>
-                      <textarea name="barcode-{index}-notes" class="form-control" rows="2"></textarea>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -621,10 +596,6 @@
                       <div class="upload-preview"></div>
                     </div>
                     
-                    <div class="mb-0">
-                      <label class="form-label">Notes (optional)</label>
-                      <textarea name="nutrition-{index}-notes" class="form-control" rows="2"></textarea>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -652,10 +623,6 @@
                       <div class="upload-preview"></div>
                     </div>
                     
-                    <div class="mb-0">
-                      <label class="form-label">Notes (optional)</label>
-                      <textarea name="ingredients-{index}-notes" class="form-control" rows="2"></textarea>
-                    </div>
                   </div>
                 </div>
               </div>

@@ -57,6 +57,8 @@ class ProductSetupForm(forms.ModelForm):
             'has_implied_nonspecific_claim',
             'has_logos_icons',
             'has_third_party_label',
+            'notes',
+            'manual_barcode'
         ]
         widgets = {
             'product_name': forms.TextInput(attrs={
@@ -93,6 +95,16 @@ class ProductSetupForm(forms.ModelForm):
             'has_implied_nonspecific_claim': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_logos_icons': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_third_party_label': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': '4',
+                'placeholder': _('Add any notes that will be necessary for assessing this product label that are not captured by the photos')
+            }),
+            'manual_barcode': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm',
+                'placeholder': _('Enter barcode number (optional)'),
+                'maxlength': '50'
+            }),
         }
     
     def clean_product_name(self):
