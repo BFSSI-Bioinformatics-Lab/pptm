@@ -16,6 +16,27 @@ UNIT_CHOICES = [
     ("OTH", "Other"),
 ]
 
+STORAGE_CHOICES = [
+    ("shelf_stable", "Shelf Stable"),
+    ("fridge", "Fridge"),
+    ("freezer", "Freezer"),
+]
+
+PACKAGING_CHOICES = [
+    ("glass", "Glass"),
+    ("metal", "Metal"),
+    ("paper", "Paper/paperboard"),
+    ("plastic_pet", "Plastic - PET - 1"),
+    ("plastic_hdpe", "Plastic - HDPE - 2"),
+    ("plastic_pvc", "Plastic - PVC - 3"),
+    ("plastic_ldpe", "Plastic - LDPE - 4"),
+    ("plastic_pp", "Plastic - PP - 5"),
+    ("plastic_ps", "Plastic - PS - 6"),
+    ("plastic_other", "Plastic - OTHER - 7"),
+    ("plastic_unknown", "Plastic - Unknown"),
+    ("other", "Other"),
+]
+
 
 def get_upload_path(instance, filename):
     model_name = instance.__class__.__name__.lower()
@@ -71,6 +92,28 @@ class Product(models.Model):
         max_length=3,
         default="OTH",
         help_text=_("Unit for the total package size")
+    )
+
+    storage_condition = models.CharField(
+        choices=STORAGE_CHOICES,
+        max_length=12,
+        default="shelf_stable",
+        help_text=_("Required storage condition")
+    )
+
+    primary_package_material = models.CharField(
+        choices=PACKAGING_CHOICES,
+        max_length=15,
+        default="other",
+        help_text=_("Primary (touching the food) packaging")
+    )
+
+    secondary_package_material = models.CharField(
+        choices=PACKAGING_CHOICES,
+        blank=True,
+        null=True,
+        max_length=15,
+        help_text=_("Secondary packaging (optional)")
     )
 
     is_variety_pack = models.BooleanField(

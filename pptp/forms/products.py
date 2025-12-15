@@ -36,6 +36,9 @@ class ProductSetupForm(forms.ModelForm):
             'product_name',
             'package_size',
             'package_size_unit',
+            'storage_condition',
+            'primary_package_material',
+            'secondary_package_material',
             'is_supplemented_food',
             'is_tds',
             'is_variety_pack',
@@ -72,6 +75,15 @@ class ProductSetupForm(forms.ModelForm):
                 'min': '0'
             }),
             'package_size_unit': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'storage_condition': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'primary_package_material': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'secondary_package_material': forms.Select(attrs={
                 'class': 'form-select'
             }),
             'is_supplemented_food': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

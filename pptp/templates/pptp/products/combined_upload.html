@@ -36,77 +36,125 @@
             <input type="hidden" id="ajax-validate-url" value="{% url 'products:validate_product' product.id %}">
             <input type="hidden" id="delete-image-url" value="{% url 'products:delete_image' product.id %}">
             <input type="hidden" id="product-id" value="{{ product.id }}">
-            
-            <!-- Product Name Section -->
-            <div class="mb-4">
+
+            <!-- Product Information Section -->
+            <div class="form-section">
+              <h5 class="section-heading first-section-heading">Product Information</h5>
+              
               <div class="mb-3">
-                  <label for="{{ form.product_name.id_for_label }}" class="form-label">Product Name</label>
-                  {{ form.product_name }}
-                  {% if form.product_name.errors %}
-                      <div class="invalid-feedback d-block">{{ form.product_name.errors.0 }}</div>
-                  {% endif %}
-                  <div class="form-text">
-                      Enter the complete product name as shown on the packaging.
-                      <br>
-                      <span class="fw-medium">Good examples:</span> Honey Nut Cheerios, Diet Coke Cherry
-                      <br>
-                      <span class="fw-medium">Not detailed enough:</span> Cheerios, Coke
-                  </div>
+                <label for="{{ form.product_name.id_for_label }}" class="form-label">Product Name</label>
+                {{ form.product_name }}
+                {% if form.product_name.errors %}
+                  <div class="invalid-feedback d-block">{{ form.product_name.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">
+                  Enter the complete product name as shown on the packaging.
+                  <br>
+                  <span class="fw-medium">Good examples:</span> Honey Nut Cheerios, Diet Coke Cherry
+                  <br>
+                  <span class="fw-medium">Not detailed enough:</span> Cheerios, Coke
+                </div>
               </div>
 
-              <!-- Package Size Section -->
               <div class="row g-3 mb-3">
-                  <div class="col-md-8">
-                      <label for="{{ form.package_size.id_for_label }}" class="form-label">Package Size</label>
-                      {{ form.package_size }}
-                      {% if form.package_size.errors %}
-                          <div class="invalid-feedback d-block">{{ form.package_size.errors.0 }}</div>
-                      {% endif %}
-                  </div>
-                  <div class="col-md-4">
-                      <label for="{{ form.package_size_unit.id_for_label }}" class="form-label">Unit</label>
-                      {{ form.package_size_unit }}
-                      {% if form.package_size_unit.errors %}
-                          <div class="invalid-feedback d-block">{{ form.package_size_unit.errors.0 }}</div>
-                      {% endif %}
-                  </div>
+                <div class="col-md-8">
+                  <label for="{{ form.package_size.id_for_label }}" class="form-label">Package Size</label>
+                  {{ form.package_size }}
+                  {% if form.package_size.errors %}
+                    <div class="invalid-feedback d-block">{{ form.package_size.errors.0 }}</div>
+                  {% endif %}
+                </div>
+                <div class="col-md-4">
+                  <label for="{{ form.package_size_unit.id_for_label }}" class="form-label">Unit</label>
+                  {{ form.package_size_unit }}
+                  {% if form.package_size_unit.errors %}
+                    <div class="invalid-feedback d-block">{{ form.package_size_unit.errors.0 }}</div>
+                  {% endif %}
+                </div>
               </div>
               <div class="form-text mb-3">
-                  Enter the total package size and select the appropriate unit (e.g., 500g, 2L, 12 oz)
+                Enter the total package size and select the appropriate unit (e.g., 500g, 2L, 12 oz)
               </div>
 
-              <!-- Flags Section -->
-              <div class="form-check">
-                  {{ form.is_variety_pack }}
-                  <label class="form-check-label" for="{{ form.is_variety_pack.id_for_label }}">
-                      {{ form.is_variety_pack.label }}
-                  </label>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="{{ form.primary_package_material.id_for_label }}" class="form-label">Primary package material</label>
+                  {{ form.primary_package_material }}
+                  {% if form.primary_package_material.errors %}
+                    <div class="invalid-feedback d-block">{{ form.primary_package_material.errors.0 }}</div>
+                  {% endif %}
+                  <div class="form-text mb-3">
+                    The major package material touching the food
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.secondary_package_material.id_for_label }}" class="form-label">Secondary package material</label>
+                  {{ form.secondary_package_material }}
+                  {% if form.secondary_package_material.errors %}
+                    <div class="invalid-feedback d-block">{{ form.secondary_package_material.errors.0 }}</div>
+                  {% endif %}
+                  <div class="form-text mb-3">
+                    If necessary, the secondary package material
+                  </div>
+                </div>
               </div>
-              <div class="form-check">
-                  {{ form.is_individually_packaged }}
-                  <label class="form-check-label" for="{{ form.is_individually_packaged.id_for_label }}">
-                      {{ form.is_individually_packaged.label }}
-                  </label>
-                  <div class="form-text">Check if this is <strong>multiple</strong> individually wrapped items. The important thing is if there is a physical wrapper around each individual object. It affects how the reference amount is applied</div>
+
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="{{ form.storage_condition.id_for_label }}" class="form-label">Storage Condition</label>
+                  {{ form.storage_condition }}
+                  {% if form.storage_condition.errors %}
+                    <div class="invalid-feedback d-block">{{ form.storage_condition.errors.0 }}</div>
+                  {% endif %}
+                </div>
               </div>
+            </div>
+
+            <!-- Product Flags Section -->
+            <div class="form-section">
+              <h5 class="section-heading">Product Flags</h5>
+              
               <div class="form-check">
-                  {{ form.needs_manual_verification }}
-                  <label class="form-check-label" for="{{ form.needs_manual_verification.id_for_label }}">
-                      {{ form.needs_manual_verification.label }}
-                  </label>
-                  <div class="form-text">Product is difficult to photograph clearly or otherwise classify, flag for manual verification</div>
+                {{ form.is_individually_packaged }}
+                <label class="form-check-label" for="{{ form.is_individually_packaged.id_for_label }}">
+                  {{ form.is_individually_packaged.label }}
+                </label>
+                <div class="form-text">Check if this is <strong>multiple</strong> individually wrapped items. The important thing is if there is a physical wrapper around each individual object. It affects how the reference amount is applied</div>
               </div>
+              
+              <div class="form-check">
+                {{ form.is_variety_pack }}
+                <label class="form-check-label" for="{{ form.is_variety_pack.id_for_label }}">
+                  {{ form.is_variety_pack.label }}
+                </label>
+              </div>
+            </div>
+
+            <!-- Processing Options Section -->
+            <div class="form-section">
+              <h5 class="section-heading">Data Processing</h5>
+              
               <div class="form-check">
                 {{ form.is_supplemented_food }}
                 <label class="form-check-label" for="{{ form.is_supplemented_food.id_for_label }}">
                   {{ form.is_supplemented_food.label }}
                 </label>
               </div>
+              
               <div class="form-check">
                 {{ form.is_tds }}
                 <label class="form-check-label" for="{{ form.is_tds.id_for_label }}">
-                  {{ form.is_tds.label }}
+                  Is part of Total Diet Study
                 </label>
+              </div>
+              
+              <div class="form-check">
+                {{ form.needs_manual_verification }}
+                <label class="form-check-label" for="{{ form.needs_manual_verification.id_for_label }}">
+                  {{ form.needs_manual_verification.label }}
+                </label>
+                <div class="form-text">Product is difficult to photograph clearly or otherwise classify, flag for manual verification</div>
               </div>
             </div>
 
