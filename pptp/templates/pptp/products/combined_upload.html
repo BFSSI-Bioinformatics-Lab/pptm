@@ -76,6 +76,19 @@
                 Enter the total package size and select the appropriate unit (e.g., 500g, 2L, 12 oz)
               </div>
 
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="{{ form.num_units.id_for_label }}" class="form-label">Number of Units</label>
+                  {{ form.num_units }}
+                  {% if form.num_units.errors %}
+                    <div class="invalid-feedback d-block">{{ form.num_units.errors.0 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="form-text mb-3">
+                Enter the number of individual units as marked on the package or visible.
+              </div>
+
               <div class="row g-3 mb-3">
                 <div class="col-md-6">
                   <label for="{{ form.primary_package_material.id_for_label }}" class="form-label">Primary package material</label>

@@ -36,6 +36,7 @@ class ProductSetupForm(forms.ModelForm):
             'product_name',
             'package_size',
             'package_size_unit',
+            'num_units',
             'storage_condition',
             'primary_package_material',
             'secondary_package_material',
@@ -73,6 +74,10 @@ class ProductSetupForm(forms.ModelForm):
                 'placeholder': _('Enter package size (number only)'),
                 'step': '0.01',
                 'min': '0'
+            }),
+            'num_units': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': _('Number of units (optional)')
             }),
             'package_size_unit': forms.Select(attrs={
                 'class': 'form-select'

@@ -116,6 +116,8 @@ class Product(models.Model):
         help_text=_("Secondary packaging (optional)")
     )
 
+    num_units = models.IntegerField(blank=True, null=True, help_text=_("Number of individual units (optional)"))
+
     is_variety_pack = models.BooleanField(
         default=False,
         help_text=_("Check if this is a variety/multi-pack product")
