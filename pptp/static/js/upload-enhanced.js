@@ -353,14 +353,14 @@ document.addEventListener('DOMContentLoaded', function() {
     );
 
     setupCheckbox(
-      'id_has_multiple_side',
+      'id_has_multiple_side_images',
       'sideUploadContainer',
       'side',
       'Add Side Image'
     );
 
     setupCheckbox(
-      'id_has_multiple_other',
+      'id_has_multiple_other_images',
       'otherUploadContainer',
       'other',
       'Add Other Image'
