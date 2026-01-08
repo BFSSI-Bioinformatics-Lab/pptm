@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('Initializing enhanced upload functionality');
   
   const config = {
-    sections: ['barcode', 'nutrition', 'ingredients'],
+    sections: ['barcode', 'nutrition', 'ingredients', 'side', 'other'],
     maxConcurrentUploads: 3
   };
 
@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
     counters: {
       barcode: 0,
       nutrition: 0, 
-      ingredients: 0
+      ingredients: 0,
+      side: 0,
+      other: 0
     },
     activeUploads: 0,
     uploadResults: []
@@ -342,6 +344,28 @@ document.addEventListener('DOMContentLoaded', function() {
       'nutrition',
       'Add Nutrition Facts'
     );
+
+    setupCheckbox(
+      'id_has_multiple_ingredients',
+      'ingredientsUploadContainer',
+      'ingredients',
+      'Add Ingredients'
+    );
+
+    setupCheckbox(
+      'id_has_multiple_side',
+      'sideUploadContainer',
+      'side',
+      'Add Side Image'
+    );
+
+    setupCheckbox(
+      'id_has_multiple_other',
+      'otherUploadContainer',
+      'other',
+      'Add Other Image'
+    );
+
   }
   
   function addNewUploadSection(section) {

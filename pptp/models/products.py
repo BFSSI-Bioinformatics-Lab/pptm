@@ -150,6 +150,18 @@ class Product(models.Model):
         default=False,
         help_text=_("Check if product has multiple barcodes")
     )
+    has_multiple_ingredients = models.BooleanField(
+        default=False,
+        help_text=_("Check if product has multiple LOI photos")
+    )
+    has_multiple_side_images = models.BooleanField(
+        default=False,
+        help_text=_("Check if product has multiple side of package photos")
+    )
+    has_multiple_other_images = models.BooleanField(
+        default=False,
+        help_text=_("Check if product has multiple other photos")
+    )
     needs_manual_verification = models.BooleanField(
         default=False,
         help_text=_("Product is difficult to photograph clearly or otherwise classify, flag for manual verification")

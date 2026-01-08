@@ -516,8 +516,16 @@
                     </div>
                     <div class="upload-preview"></div>
                     
+                    <div id="ingredientsUploadContainer" class="mt-4"></div>
+
                   </div>
                   <div class="card-footer-form">
+                    <div class="form-check">
+                      {{ form.has_multiple_ingredients }}
+                      <label class="form-check-label" for="{{ form.has_multiple_ingredients.id_for_label }}">
+                        {{ form.has_multiple_ingredients.label }}
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -559,7 +567,17 @@
                       <input type="file" name="image_side-image" class="form-control" accept="image/*">
                     </div>
                     <div class="upload-preview"></div>
+
+                    <div id="sideUploadContainer" class="mt-4"></div>
                     
+                  </div>
+                  <div class="card-footer-form">
+                    <div class="form-check">
+                      {{ form.has_multiple_side }}
+                      <label class="form-check-label" for="{{ form.has_multiple_side_images.id_for_label }}">
+                        Multiple side images
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -596,7 +614,17 @@
                       <input type="file" name="image_other-image" class="form-control" accept="image/*">
                     </div>
                     <div class="upload-preview"></div>
+
+                    <div id="otherUploadContainer" class="mt-4"></div>
                     
+                  </div>
+                  <div class="card-footer-form">
+                    <div class="form-check">
+                      {{ form.has_multiple_other_images }}
+                      <label class="form-check-label" for="{{ form.has_multiple_other_images.id_for_label }}">
+                        Multiple other images
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -684,6 +712,58 @@
                       <div class="upload-preview"></div>
                     </div>
                     
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template id="sideTemplate">
+              <div class="upload-item side-upload mb-3">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                      <h5 class="h6 mb-0">Additional Side Image</h5>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                        <i class="bi bi-trash"></i> Remove
+                      </button>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Side Image</label>
+                      <div class="upload-zone" data-target="image_side-image-{index}">
+                        <div class="upload-label">
+                          <i class="bi bi-cloud-arrow-up"></i>
+                          <span>Drop side image or click to browse</span>
+                        </div>
+                        <input type="file" name="image_side-{index}-image" class="form-control" accept="image/*">
+                      </div>
+                      <div class="upload-preview"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template id="otherTemplate">
+              <div class="upload-item other-upload mb-3">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                      <h5 class="h6 mb-0">Additional Other Image</h5>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-upload-btn">
+                        <i class="bi bi-trash"></i> Remove
+                      </button>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Other Image</label>
+                      <div class="upload-zone" data-target="image_other-image-{index}">
+                        <div class="upload-label">
+                          <i class="bi bi-cloud-arrow-up"></i>
+                          <span>Drop image or click to browse</span>
+                        </div>
+                        <input type="file" name="image_other-{index}-image" class="form-control" accept="image/*">
+                      </div>
+                      <div class="upload-preview"></div>
+                    </div>
                   </div>
                 </div>
               </div>
