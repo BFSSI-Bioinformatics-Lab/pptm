@@ -148,19 +148,14 @@
             <div class="form-section">
               <h5 class="section-heading">Data Processing</h5>
               
-              <div class="form-check">
-                {{ form.is_supplemented_food }}
-                <label class="form-check-label" for="{{ form.is_supplemented_food.id_for_label }}">
-                  {{ form.is_supplemented_food.label }}
-                </label>
+              <div style="margin-bottom: 10px;">
+                <label for="{{ form.source_batch.id_for_label }}" class="form-label">Product Batch</label>
+                {{ form.source_batch }}
+                {% if form.source_batch.errors %}
+                  <div class="invalid-feedback d-block">{{ form.source_batch.errors.0 }}</div>
+                {% endif %}
               </div>
-              
-              <div class="form-check">
-                {{ form.is_tds }}
-                <label class="form-check-label" for="{{ form.is_tds.id_for_label }}">
-                  Is part of Total Diet Study
-                </label>
-              </div>
+
               
               <div class="form-check">
                 {{ form.needs_manual_verification }}

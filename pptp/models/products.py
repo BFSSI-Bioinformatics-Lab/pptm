@@ -37,6 +37,13 @@ PACKAGING_CHOICES = [
     ("other", "Other"),
 ]
 
+BATCH_CHOICES = [
+    ("2025_snapcan","SNAP-CAN 2025"),
+    ("tds","Total Diet Study"),
+    ("2025_supp_food","2025 Supplemented Food Collection"),
+    ("2025_frozen_entrees","2025 Frozen Entrees Collection"),
+]
+
 
 def get_upload_path(instance, filename):
     model_name = instance.__class__.__name__.lower()
@@ -114,6 +121,12 @@ class Product(models.Model):
         null=True,
         max_length=15,
         help_text=_("Secondary packaging (optional)")
+    )
+
+    source_batch = models.CharField(
+        choices=BATCH_CHOICES,
+        null=True,
+        help_text=_("Product collection batch")
     )
 
     num_units = models.IntegerField(blank=True, null=True, help_text=_("Number of individual units (optional)"))

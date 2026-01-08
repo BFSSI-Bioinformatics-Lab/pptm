@@ -40,8 +40,7 @@ class ProductSetupForm(forms.ModelForm):
             'storage_condition',
             'primary_package_material',
             'secondary_package_material',
-            'is_supplemented_food',
-            'is_tds',
+            'source_batch',
             'is_variety_pack',
             'is_individually_packaged',
             'has_preparation_instructions',
@@ -94,8 +93,9 @@ class ProductSetupForm(forms.ModelForm):
             'secondary_package_material': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            'is_supplemented_food': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'is_tds': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'source_batch': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'is_variety_pack': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_individually_packaged': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'has_preparation_instructions': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
