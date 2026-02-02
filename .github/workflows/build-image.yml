@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - fsdh_migration
     tags:
       - 'v*'
 
