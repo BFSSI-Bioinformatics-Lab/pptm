@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   web:
-    image: "ghcr.io/bfssi-bioinformatics-lab/pptm:main"
+    image: "ghcr.io/bfssi-bioinformatics-lab/pptm:fsdh_migration"
     command: "gunicorn config.wsgi:application --bind 0.0.0.0:8080"
     ports:
       - "8080:8080"

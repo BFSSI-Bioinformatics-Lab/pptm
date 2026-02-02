@@ -7,10 +7,10 @@ import environ
 import os
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+    "https://fsdh-proj-fanddaf-webapp-prd.azurewebsites.net",
 ]
 CORS_ALLOWED_ORIGINS = [
-    "https://fsdh-proj-plpp-webapp-prd.azurewebsites.net",
+    "https://fsdh-proj-fanddaf-webapp-prd.azurewebsites.net",
 ]
 
 
