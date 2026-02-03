@@ -305,3 +305,5 @@ SOCIALACCOUNT_FORMS = {"signup": "pptp.users.forms.UserSocialSignupForm"}
 AZURE_ACCOUNT_URL = os.environ.get('AZURE_ACCOUNT_URL')
 AZURE_SAS_TOKEN = os.environ.get('AZURE_SAS_TOKEN')
 AZURE_CONTAINER = os.environ.get('AZURE_CONTAINER', 'media')
+
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "fsdh-proj-fanddaf-webapp-prd.azurewebsites.net"]  # noqa: S104
